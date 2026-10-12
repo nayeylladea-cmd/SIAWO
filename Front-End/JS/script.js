@@ -207,6 +207,7 @@ function actionButtons(id, type) {
    MEMUAT DATA DARI BACKEND
    ========================================= */
 
+
 async function loadAllData() {
     try {
         const results = await Promise.all([
@@ -223,15 +224,19 @@ async function loadAllData() {
         state.pembayaran = getRows(results[3]);
         state.dashboard = getRecord(results[4]);
 
-        renderAll();
     } catch (error) {
         console.error("Gagal memuat data:", error);
 
-        showToast(
-            `Gagal memuat data: ${error.message}`,
-            "error"
-        );
+        // Gunakan data kosong jika backend tidak tersedia.
+        state.pelanggan = [];
+        state.paket = [];
+        state.transaksi = [];
+        state.pembayaran = [];
+        state.dashboard = {};
     }
+
+    // Tetap tampilkan halaman meskipun API gagal.
+    renderAll();
 }
 
 
