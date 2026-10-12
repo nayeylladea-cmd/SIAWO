@@ -1272,6 +1272,17 @@ function initializeApp() {
 
     showPage("dashboard");
     loadAllData();
+       } catch (error) {
+        console.error("Gagal memuat data:", error);
+
+        state.pelanggan = [];
+        state.paket = [];
+        state.transaksi = [];
+        state.pembayaran = [];
+        state.dashboard = {};
+    }
+
+    renderAll();
 }
 
 document.addEventListener("DOMContentLoaded", initializeApp);
