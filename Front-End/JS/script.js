@@ -1290,7 +1290,6 @@ function setupForms() {
    INISIALISASI
    ========================================= */
 
-
 function initializeApp() {
     if ($("currentDate")) {
         $("currentDate").textContent = new Date().toLocaleDateString(
