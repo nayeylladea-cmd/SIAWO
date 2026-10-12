@@ -4,10 +4,8 @@ const fs = require("fs");
 const path = require("path");
 
 
-const SUPABASE_URL = "https://kkuwqdluicotbzgdmfjk.supabase.co";
-
-const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_Cs1-1HixNDSvTVVJyfp32Q_o1e94vZn";
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
 
 
 const PORT = Number(process.env.PORT) || 3000;
