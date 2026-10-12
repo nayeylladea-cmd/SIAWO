@@ -6,7 +6,8 @@
    Frontend JavaScript
    ========================================= */
 
-const API_URL = "";
+const SUPABASE_URL = "https://kkuwqdluicotbzgdmfjk.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Cs1-1HixNDSvTVVJyfp32Q_o1e94vZn";
 
 const state = {
     pelanggan: [],
@@ -18,6 +19,43 @@ const state = {
 };
 
 const $ = (id) => document.getElementById(id);
+
+async function supabaseRequest(table, options = {}) {
+    const query = options.query || "select=*";
+    const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/${table}?${query}`,
+        {
+            method: options.method || "GET",
+            headers: {
+                "apikey": SUPABASE_KEY,
+                "Authorization": `Bearer ${SUPABASE_KEY}`,
+                "Content-Type": "application/json",
+                "Prefer": options.prefer || "return=representation"
+            },
+            body: options.body ? JSON.stringify(options.body) : undefined
+        }
+    );
+
+    const text = await response.text();
+    let result = null;
+
+    if (text) {
+        try {
+            result = JSON.parse(text);
+        } catch {
+            throw new Error(`Respons Supabase tidak valid (${response.status}).`);
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            result?.message || result?.hint || `Supabase error ${response.status}`
+        );
+    }
+
+    return result;
+}
+
 
 const rupiah = (angka) =>
     new Intl.NumberFormat("id-ID", {
