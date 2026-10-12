@@ -245,34 +245,39 @@ function actionButtons(id, type) {
 
 
 
+
 async function loadAllData() {
     try {
-        const results = await Promise.all([
-            apiRequest("/api/pelanggan"),
-            apiRequest("/api/paket"),
-            apiRequest("/api/transaksi"),
-            apiRequest("/api/pembayaran"),
-            apiRequest("/api/dashboard")
+        const [
+            pelanggan,
+            paket,
+            transaksi,
+            pembayaran
+        ] = await Promise.all([
+            supabaseRequest("pelanggan"),
+            supabaseRequest("paket_wedding"),
+            supabaseRequest("transaksi_wedding"),
+            supabaseRequest("pembayaran")
         ]);
 
-        state.pelanggan = getRows(results[0]);
-        state.paket = getRows(results[1]);
-        state.transaksi = getRows(results[2]);
-        state.pembayaran = getRows(results[3]);
-        state.dashboard = getRecord(results[4]);
+        state.pelanggan = getRows(pelanggan);
+        state.paket = getRows(paket);
+        state.transaksi = getRows(transaksi);
+        state.pembayaran = getRows(pembayaran);
+
+        state.dashboard = {};
 
     } catch (error) {
-        console.error("Gagal memuat data:", error);
-        state.pelanggan = [];
-        state.paket = [];
-        state.transaksi = [];
-        state.pembayaran = [];
-        state.dashboard = {};
+        console.error("Gagal memuat data Supabase:", error);
+
+        showToast(
+            `Gagal memuat data: ${error.message}`,
+            "error"
+        );
     }
 
     renderAll();
 }
-
 
 function renderAll() {
     renderDashboard();
