@@ -78,15 +78,13 @@ async function apiRequest(endpoint, options = {}) {
     const text = await response.text();
     let result = null;
 
-    if (text) {
-        try {
-            result = JSON.parse(text);
-        } catch {
-            throw new Error(
-                "Server tidak mengirim JSON yang valid. Periksa alamat API dan app.js."
-            );
-        }
+   if (text) {
+    try {
+        result = JSON.parse(text);
+    } catch {
+        throw new Error(`API ${endpoint} tidak tersedia di GitHub Pages.`);
     }
+}
 
     if (!response.ok) {
         throw new Error(
