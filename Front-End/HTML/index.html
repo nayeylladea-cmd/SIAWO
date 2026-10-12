@@ -1,0 +1,440 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lunelle Wedding</title>
+
+    <link rel="stylesheet" href="/CSS/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="brand-icon">L</span>
+                <div>
+                    <h2>Lunelle</h2>
+                    <p>WEDDING ORGANIZER</p>
+                </div>
+            </div>
+
+            <p class="menu-label">MENU UTAMA</p>
+
+            <nav class="navigation">
+                <a href="#dashboard" class="nav-link active" data-page="dashboard">
+                    <span>⌂</span> Dashboard
+                </a>
+                <a href="#pelanggan" class="nav-link" data-page="pelanggan">
+                    <span>♡</span> Data Pelanggan
+                </a>
+                <a href="#paket" class="nav-link" data-page="paket">
+                    <span>◇</span> Paket Wedding
+                </a>
+                <a href="#transaksi" class="nav-link" data-page="transaksi">
+                    <span>▤</span> Transaksi Wedding
+                </a>
+                <a href="#pembayaran" class="nav-link" data-page="pembayaran">
+                    <span>↗</span> Pembayaran
+                </a>
+                <a href="#piutang" class="nav-link" data-page="piutang">
+                <span>Rp</span> Piutang
+            </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>Make your special day</p>
+                <strong>Beautiful & Unforgettable ♡</strong>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">WEDDING MANAGEMENT</p>
+                    <h1 id="page-title">Dashboard</h1>
+                </div>
+                <div class="profile">
+                    <span class="profile-icon">L</span>
+                    <div>
+                        <strong>Administrator</strong>
+                        <p>Lunelle Wedding</p>
+                    </div>
+                </div>
+            </header>
+
+            <section id="dashboard-page" class="page active">
+                <div class="welcome-banner">
+                    <div>
+                        <p class="eyebrow">WELCOME TO LUNELLE</p>
+                        <h2>Manage every moment beautifully.</h2>
+                        <p>Kelola pelanggan, paket wedding, transaksi, dan pembayaran dalam satu tempat.</p>
+                    </div>
+                    <div class="banner-decoration">♡</div>
+                </div>
+
+
+<div class="stats-grid">
+    <article class="stat-card">
+        <p>Total Pelanggan</p>
+        <h3 id="total-pelanggan">0</h3>
+        <span>Data pelanggan terdaftar</span>
+    </article>
+
+    <article class="stat-card">
+        <p>Total Paket</p>
+        <h3 id="total-paket">0</h3>
+        <span>Paket wedding tersedia</span>
+    </article>
+
+    <article class="stat-card">
+        <p>Total Transaksi</p>
+        <h3 id="total-transaksi">0</h3>
+        <span>Transaksi tercatat</span>
+    </article>
+
+    <article class="stat-card">
+        <p>Total Pendapatan</p>
+        <h3 id="total-pendapatan">Rp0</h3>
+        <span>Total pembayaran masuk</span>
+    </article>
+
+    <article class="stat-card">
+        <p>Total Piutang</p>
+        <h3 id="total-piutang">Rp0</h3>
+        <span>Sisa tagihan pelanggan</span>
+    </article>
+</div>
+
+<!-- DIAGRAM RINGKASAN PIUTANG -->
+<div class="content-card receivable-chart-card">
+    <div class="section-heading">
+        <div>
+            <h2>Ringkasan Keuangan</h2>
+            <p>Perbandingan tagihan, pembayaran, dan sisa piutang.</p>
+        </div>
+    </div>
+
+    <div class="chart-legend">
+        <span><i class="legend-dot tagihan"></i> Total Tagihan</span>
+        <span><i class="legend-dot pembayaran"></i> Total Dibayar</span>
+        <span><i class="legend-dot piutang"></i> Sisa Piutang</span>
+    </div>
+
+    <div class="receivable-chart">
+        <div class="chart-row">
+            <span class="chart-label">Total Tagihan</span>
+            <div class="chart-track">
+                <div id="bar-tagihan" class="chart-bar tagihan"></div>
+            </div>
+            <span id="nilai-tagihan" class="chart-value">Rp0</span>
+        </div>
+
+        <div class="chart-row">
+            <span class="chart-label">Total Dibayar</span>
+            <div class="chart-track">
+                <div id="bar-pembayaran" class="chart-bar pembayaran"></div>
+            </div>
+            <span id="nilai-pembayaran" class="chart-value">Rp0</span>
+        </div>
+
+        <div class="chart-row">
+            <span class="chart-label">Sisa Piutang</span>
+            <div class="chart-track">
+                <div id="bar-piutang" class="chart-bar piutang"></div>
+            </div>
+            <span id="nilai-piutang" class="chart-value">Rp0</span>
+        </div>
+    </div>
+</div>
+
+                <div class="content-card">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Selamat datang!</h2>
+                            <p>Mulai kelola operasional wedding organizer kamu.</p>
+                        </div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <button type="button" class="primary-button" data-go="pelanggan">
+                            + Tambah Pelanggan
+                        </button>
+                        <button type="button" class="secondary-button" data-go="transaksi">
+                            Lihat Transaksi
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="pelanggan-page" class="page">
+            
+
+                <div class="content-card">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Data Pelanggan</h2>
+                            <p>Kelola informasi pelanggan wedding organizer.</p>
+                        </div>
+                        <button class="primary-button" id="tambah-pelanggan" type="button">
+                            + Tambah Pelanggan
+                        </button>
+                    </div>
+
+                    <form id="form-pelanggan" class="data-form hidden">
+                        <input type="hidden" name="id_pelanggan">
+                        <div class="form-grid">
+                            <label>Nama pelanggan
+                                <input name="nama_pelanggan" required placeholder="Nama lengkap">
+                            </label>
+                            <label>Nomor telepon
+                                <input name="no_telepon" placeholder="08xxxxxxxxxx">
+                            </label>
+                            <label>Email
+                                <input name="email" type="email" placeholder="email@example.com">
+                            </label>
+                            <label>Alamat
+                                <input name="alamat" placeholder="Alamat pelanggan">
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button class="primary-button" type="submit">Simpan</button>
+                            <button class="secondary-button" type="button" data-cancel="pelanggan">Batal</button>
+                        </div>
+                    </form>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nama</th>
+                                    <th>Telepon</th>
+                                    <th>Email</th>
+                                    <th>Alamat</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-pelanggan"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+<section id="piutang-page" class="page">
+    <div class="content-card">
+        <div class="section-heading">
+            <div>
+                <h2>Daftar Piutang</h2>
+                <p>Pantau sisa tagihan setiap pelanggan.</p>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Transaksi</th>
+                        <th>Nama Pelanggan</th>
+                        <th>Paket Wedding</th>
+                        <th>Total Tagihan</th>
+                        <th>Total Dibayar</th>
+                        <th>Sisa Piutang</th>
+                    </tr>
+                </thead>
+                <tbody id="tabel-piutang">
+                    <tr>
+                        <td colspan="6">Memuat data piutang...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+            <section id="paket-page" class="page">
+                <div class="content-card">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Paket Wedding</h2>
+                            <p>Kelola daftar paket dan harga layanan.</p>
+                        </div>
+                        <button class="primary-button" id="tambah-paket" type="button">
+                            + Tambah Paket
+                        </button>
+                    </div>
+
+                    <form id="form-paket" class="data-form hidden">
+                        <input type="hidden" name="id_paket">
+                        <div class="form-grid">
+                            <label>Nama paket
+                                <input name="nama_paket" required placeholder="Nama paket wedding">
+                            </label>
+                            <label>Harga paket (Rp)
+                                <input name="harga" type="number" min="0" required placeholder="Contoh: 25000000">
+                            </label>
+                            <label class="full-width">Deskripsi
+                                <textarea name="deskripsi" rows="3" placeholder="Deskripsi paket"></textarea>
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button class="primary-button" type="submit">Simpan</button>
+                            <button class="secondary-button" type="button" data-cancel="paket">Batal</button>
+                        </div>
+                    </form>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nama Paket</th>
+                                    <th>Harga</th>
+                                    <th>Deskripsi</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-paket"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="transaksi-page" class="page">
+                <div class="content-card">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Transaksi Wedding</h2>
+                            <p>Catat transaksi dan pantau status acara.</p>
+                        </div>
+                        <button class="primary-button" id="tambah-transaksi" type="button">
+                            + Tambah Transaksi
+                        </button>
+                    </div>
+
+                    <form id="form-transaksi" class="data-form hidden">
+                        <input type="hidden" name="id_transaksi">
+                        <div class="form-grid">
+                            <label>Pelanggan
+                                <select name="id_pelanggan" id="pilih-pelanggan" required>
+                                    <option value="">Pilih pelanggan</option>
+                                </select>
+                            </label>
+                            <label>Paket wedding
+                                <select name="id_paket" id="pilih-paket" required>
+                                    <option value="">Pilih paket</option>
+                                </select>
+                            </label>
+                            <label>Tanggal transaksi
+                                <input name="tanggal_transaksi" type="date" required>
+                            </label>
+                            <label>Tanggal acara
+                                <input name="tanggal_acara" type="date" required>
+                            </label>
+                            <label>Total transaksi (Rp)
+                                <input name="total_transaksi" id="total-transaksi-input" type="number" min="0" required>
+                            </label>
+                            <label>Status
+                                <select name="status" required>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Berlangsung">Berlangsung</option>
+                                    <option value="Selesai">Selesai</option>
+                                    <option value="Dibatalkan">Dibatalkan</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button class="primary-button" type="submit">Simpan</button>
+                            <button class="secondary-button" type="button" data-cancel="transaksi">Batal</button>
+                        </div>
+                    </form>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Pelanggan</th>
+                                    <th>Paket</th>
+                                    <th>Tanggal Acara</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-transaksi"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="pembayaran-page" class="page">
+                <div class="content-card">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Pembayaran</h2>
+                            <p>Catat pembayaran dan pantau penerimaan uang.</p>
+                        </div>
+                        <button class="primary-button" id="tambah-pembayaran" type="button">
+                            + Tambah Pembayaran
+                        </button>
+                    </div>
+
+                    <form id="form-pembayaran" class="data-form hidden">
+                        <input type="hidden" name="id_pembayaran">
+                        <div class="form-grid">
+                            <label>Transaksi
+                                <select name="id_transaksi" id="pilih-transaksi" required>
+                                    <option value="">Pilih transaksi</option>
+                                </select>
+                            </label>
+                            <label>Tanggal pembayaran
+                                <input name="tanggal_pembayaran" type="date" required>
+                            </label>
+                            <label>Jumlah pembayaran (Rp)
+                                <input name="jumlah_bayar" type="number" min="1" required placeholder="Jumlah yang dibayar">
+                            </label>
+                            <label>Metode pembayaran
+                                <select name="metode_pembayaran" required>
+                                    <option value="">Pilih metode</option>
+                                    <option value="Transfer Bank">Transfer Bank</option>
+                                    <option value="Tunai">Tunai</option>
+                                    <option value="QRIS">QRIS</option>
+                                    <option value="Kartu Debit">Kartu Debit</option>
+                                </select>
+                            </label>
+                            <label class="full-width">Keterangan
+                                <textarea name="keterangan" rows="3" placeholder="Contoh: DP 30% atau pelunasan"></textarea>
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button class="primary-button" type="submit">Simpan</button>
+                            <button class="secondary-button" type="button" data-cancel="pembayaran">Batal</button>
+                        </div>
+                    </form>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>ID Transaksi</th>
+                                    <th>Tanggal</th>
+                                    <th>Jumlah</th>
+                                    <th>Metode</th>
+                                    <th>Keterangan</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-pembayaran"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="page-footer">
+                <p>© 2026 Lunelle Wedding · Make every moment beautiful ♡</p>
+            </footer>
+        </main>
+    </div>
+
+    <div id="toast" class="toast" role="status"></div>
+
+    <script src="/JS/script.js"></script>
+</body>
+</html>
