@@ -133,10 +133,7 @@ function angka(nilai) {
         return 0;
     }
 
-    const hasil = Number(
-        String(nilai).replace(/[^\d.-]/g, "")
-    );
-
+    const hasil = Number(String(nilai).replace(/[^\d.-]/g, ""));
     return Number.isFinite(hasil) ? hasil : 0;
 }
 
