@@ -137,6 +137,16 @@ function angka(nilai) {
     return Number.isFinite(hasil) ? hasil : 0;
 }
 
+javascript
+function rupiah(nilai) {
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(angka(nilai));
+}
+
 function getRows(result) {
     if (Array.isArray(result)) return result;
     if (Array.isArray(result?.data)) return result.data;
