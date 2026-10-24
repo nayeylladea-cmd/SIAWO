@@ -124,6 +124,21 @@ return result;
 
 }
 
+function angka(nilai) {
+    if (typeof nilai === "number") {
+        return Number.isFinite(nilai) ? nilai : 0;
+    }
+
+    if (nilai === null || nilai === undefined || nilai === "") {
+        return 0;
+    }
+
+    const hasil = Number(
+        String(nilai).replace(/[^\d.-]/g, "")
+    );
+
+    return Number.isFinite(hasil) ? hasil : 0;
+}
 
 function getRows(result) {
     if (Array.isArray(result)) return result;
