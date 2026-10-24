@@ -147,6 +147,7 @@ function rupiah(nilai) {
     }).format(angka(nilai));
 }
 
+javascript
 function escapeHTML(nilai) {
     return String(nilai ?? "").replace(/[&<>"']/g, function (karakter) {
         const pengganti = {
