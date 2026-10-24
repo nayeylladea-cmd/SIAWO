@@ -20,6 +20,58 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 
+async function supabaseRequest(table, options = {}) {
+    const query = options.query || "select=*";
+    const method = (options.method || "GET").toUpperCase();
+
+    const headers = {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: options.prefer || "return=representation"
+    };
+
+    let body;
+
+    if (options.body !== undefined && options.body !== null) {
+        body = typeof options.body === "string"
+            ? options.body
+            : JSON.stringify(options.body);
+    }
+
+    const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/${table}?${query}`,
+        {
+            method: method,
+            headers: headers,
+            body: body
+        }
+    );
+
+    const text = await response.text();
+    let result = null;
+
+    if (text) {
+        try {
+            result = JSON.parse(text);
+        } catch {
+            throw new Error(
+                `Respons Supabase tidak valid. Status: ${response.status}`
+            );
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            result?.message ||
+            result?.details ||
+            result?.hint ||
+            `Supabase error ${response.status}`
+        );
+    }
+
+    return result;
+}
 
 async function apiRequest(endpoint, options = {}) {
 const routeMap = {
@@ -29,7 +81,7 @@ const routeMap = {
 "/api/pembayaran": "pembayaran"
 };
 
-```
+
 const parts = endpoint.split("?")[0].split("/");
 const routeIndex = parts.indexOf("api");
 
@@ -69,7 +121,6 @@ const result = await supabaseRequest(resource, {
 });
 
 return result;
-```
 
 }
 
