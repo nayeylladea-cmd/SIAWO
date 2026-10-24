@@ -105,43 +105,57 @@ function showToast(message, type = "success") {
 }
 
 async function apiRequest(endpoint, options = {}) {
-    const response = await fetch(`${API_URL}${endpoint}`, {
-        ...options,
-        headers: {
-            "Content-Type": "application/json",
-            ...(options.headers || {})
-        }
-    });
+const routeMap = {
+"/api/pelanggan": "pelanggan",
+"/api/paket": "paket_wedding",
+"/api/transaksi": "transaksi_wedding",
+"/api/pembayaran": "pembayaran"
+};
 
-    const text = await response.text();
-    let result = null;
+```
+const parts = endpoint.split("?")[0].split("/");
+const routeIndex = parts.indexOf("api");
 
-   if (text) {
-    try {
-        result = JSON.parse(text);
-    } catch {
-        throw new Error(`API ${endpoint} tidak tersedia di GitHub Pages.`);
-    }
+if (routeIndex === -1 || !parts[routeIndex + 1]) {
+    throw new Error("Alamat API tidak dikenali.");
 }
 
-    if (!response.ok) {
-        throw new Error(
-            result?.message ||
-            result?.error ||
-            `Permintaan gagal (${response.status}).`
-        );
-    }
+const route = "/" + parts.slice(routeIndex + 1).join("/");
+const resource = routeMap["/api/" + parts[routeIndex + 1]];
 
-    if (result?.error) {
-        throw new Error(
-            typeof result.error === "string"
-                ? result.error
-                : JSON.stringify(result.error)
-        );
-    }
-
-    return result;
+if (!resource) {
+    throw new Error("Jenis data tidak dikenali.");
 }
+
+const id = parts[routeIndex + 2];
+const primaryKeys = {
+    pelanggan: "id_pelanggan",
+    paket_wedding: "id_paket",
+    transaksi_wedding: "id_transaksi",
+    pembayaran: "id_pembayaran"
+};
+
+const primaryKey = primaryKeys[resource];
+const method = (options.method || "GET").toUpperCase();
+
+let query = "select=*";
+
+if (id) {
+    query += `&${primaryKey}=eq.${encodeURIComponent(id)}`;
+}
+
+const result = await supabaseRequest(resource, {
+    method,
+    query,
+    body: options.body,
+    prefer: "return=representation"
+});
+
+return result;
+```
+
+}
+
 
 function getRows(result) {
     if (Array.isArray(result)) return result;
