@@ -20,59 +20,6 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 
-```javascript
-async function savePelanggan(event) {
-    event.preventDefault();
-
-    const form = $("form-pelanggan");
-
-    if (!form) {
-        showToast("Form pelanggan tidak ditemukan.", "error");
-        return;
-    }
-
-    const id = form.elements.namedItem("id_pelanggan").value;
-
-    const payload = {
-        nama_pelanggan: form.elements.namedItem("nama_pelanggan").value.trim(),
-        no_telepon: form.elements.namedItem("no_telepon").value.trim(),
-        email: form.elements.namedItem("email").value.trim(),
-        alamat: form.elements.namedItem("alamat").value.trim()
-    };
-
-    if (!payload.nama_pelanggan) {
-        showToast("Nama pelanggan wajib diisi.", "error");
-        return;
-    }
-
-    try {
-        await apiRequest(
-            id
-                ? `/api/pelanggan/${encodeURIComponent(id)}`
-                : "/api/pelanggan",
-            {
-                method: id ? "PATCH" : "POST",
-                body: payload
-            }
-        );
-
-        showToast(
-            id
-                ? "Data pelanggan berhasil diperbarui."
-                : "Pelanggan berhasil ditambahkan."
-        );
-
-        form.reset();
-        form.classList.add("hidden");
-
-        await loadAllData();
-    } catch (error) {
-        console.error("Gagal menyimpan pelanggan:", error);
-        showToast(error.message || "Gagal menyimpan pelanggan.", "error");
-    }
-}
-```
-
 
 async function apiRequest(endpoint, options = {}) {
 const routeMap = {
