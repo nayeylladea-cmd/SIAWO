@@ -147,6 +147,20 @@ function rupiah(nilai) {
     }).format(angka(nilai));
 }
 
+function escapeHTML(nilai) {
+    return String(nilai ?? "").replace(/[&<>"']/g, function (karakter) {
+        const pengganti = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        };
+
+        return pengganti[karakter];
+    });
+}
+
 function getRows(result) {
     if (Array.isArray(result)) return result;
     if (Array.isArray(result?.data)) return result.data;
