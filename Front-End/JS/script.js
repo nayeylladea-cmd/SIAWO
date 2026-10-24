@@ -39,22 +39,6 @@ function rupiah(nilai) {
     }).format(angka(nilai));
 }
 
-function tanggalIndonesia(nilai) {
-    if (!nilai) return "-";
-
-    const tanggal = new Date(nilai + "T00:00:00");
-
-    if (Number.isNaN(tanggal.getTime())) {
-        return String(nilai);
-    }
-
-    return tanggal.toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-    });
-}
-
 function escapeHTML(nilai) {
     return String(nilai ?? "").replace(/[&<>"']/g, karakter => ({
         "&": "&amp;",
