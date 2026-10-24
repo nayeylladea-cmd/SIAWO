@@ -137,7 +137,6 @@ function angka(nilai) {
     return Number.isFinite(hasil) ? hasil : 0;
 }
 
-javascript
 function rupiah(nilai) {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
@@ -147,7 +146,6 @@ function rupiah(nilai) {
     }).format(angka(nilai));
 }
 
-javascript
 function escapeHTML(nilai) {
     return String(nilai ?? "").replace(/[&<>"']/g, function (karakter) {
         const pengganti = {
