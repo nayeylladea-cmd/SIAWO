@@ -1,139 +1,33 @@
-
 "use strict";
 
 /* =========================================
    LUNELLE WEDDING
-   Frontend JavaScript
+   Frontend JavaScript + Supabase
    ========================================= */
 
-const SUPABASE_URL = "https://kkuwqdluicotbzgdmfjk.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Cs1-1HixNDSvTVVJyfp32Q_o1e94vZn";
+// PERTAHANKAN konfigurasi Supabase milikmu dari kode lama.
+const SUPABASE_URL = "MASUKKAN_URL_SUPABASE_MILIKMU";
+const SUPABASE_KEY = "MASUKKAN_PUBLISHABLE_KEY_MILIKMU";
+
+/* =========================================
+   STATE APLIKASI
+   ========================================= */
 
 const state = {
     pelanggan: [],
     paket: [],
     transaksi: [],
-    pembayaran: [],
-    dashboard: {},
-    currentPage: "dashboard"
+    pembayaran: []
 };
 
-const $ = (id) => document.getElementById(id);
+let sedangMemuat = false;
 
-async function supabaseRequest(table, options = {}) {
-    const query = options.query || "select=*";
-    const method = (options.method || "GET").toUpperCase();
-
-    const headers = {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        "Content-Type": "application/json",
-        Prefer: options.prefer || "return=representation"
-    };
-
-    const body = options.body == null
-        ? undefined
-        : typeof options.body === "string"
-            ? options.body
-            : JSON.stringify(options.body);
-
-    const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/${table}?${query}`,
-        {
-            method: method,
-            headers: headers,
-            body: body
-        }
-    );
-
-    const text = await response.text();
-    let result = null;
-
-    if (text) {
-        try {
-            result = JSON.parse(text);
-        } catch (error) {
-            throw new Error(
-                `Respons Supabase tidak valid. Status: ${response.status}`
-            );
-        }
-    }
-
-    if (!response.ok) {
-        throw new Error(
-            result?.message ||
-            result?.details ||
-            result?.hint ||
-            `Supabase error ${response.status}`
-        );
-    }
-
-    return result;
-}
-
-
-
-async function apiRequest(endpoint, options = {}) {
-const routeMap = {
-"/api/pelanggan": "pelanggan",
-"/api/paket": "paket_wedding",
-"/api/transaksi": "transaksi_wedding",
-"/api/pembayaran": "pembayaran"
-};
-
-
-const parts = endpoint.split("?")[0].split("/");
-const routeIndex = parts.indexOf("api");
-
-if (routeIndex === -1 || !parts[routeIndex + 1]) {
-    throw new Error("Alamat API tidak dikenali.");
-}
-
-const route = "/" + parts.slice(routeIndex + 1).join("/");
-const resource = routeMap["/api/" + parts[routeIndex + 1]];
-
-if (!resource) {
-    throw new Error("Jenis data tidak dikenali.");
-}
-
-const id = parts[routeIndex + 2];
-const primaryKeys = {
-    pelanggan: "id_pelanggan",
-    paket_wedding: "id_paket",
-    transaksi_wedding: "id_transaksi",
-    pembayaran: "id_pembayaran"
-};
-
-const primaryKey = primaryKeys[resource];
-const method = (options.method || "GET").toUpperCase();
-
-let query = "select=*";
-
-if (id) {
-    query += `&${primaryKey}=eq.${encodeURIComponent(id)}`;
-}
-
-const result = await supabaseRequest(resource, {
-    method,
-    query,
-    body: options.body,
-    prefer: "return=representation"
-});
-
-return result;
-
-}
+/* =========================================
+   FUNGSI DASAR
+   ========================================= */
 
 function angka(nilai) {
-    if (typeof nilai === "number") {
-        return Number.isFinite(nilai) ? nilai : 0;
-    }
-
-    if (nilai === null || nilai === undefined || nilai === "") {
-        return 0;
-    }
-
-    const hasil = Number(String(nilai).replace(/[^\d.-]/g, ""));
+    const hasil = Number(nilai);
     return Number.isFinite(hasil) ? hasil : 0;
 }
 
@@ -141,129 +35,181 @@ function rupiah(nilai) {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "IDR",
-        minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(angka(nilai));
 }
 
 function escapeHTML(nilai) {
-    return String(nilai ?? "").replace(/[&<>"']/g, function (karakter) {
-        const pengganti = {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#39;"
-        };
+    return String(nilai ?? "").replace(/[&<>"']/g, karakter => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    })[karakter]);
+}
 
-        return pengganti[karakter];
+function tanggalIndonesia(nilai) {
+    if (!nilai) return "-";
+
+    const tanggal = new Date(nilai + "T00:00:00");
+
+    if (Number.isNaN(tanggal.getTime())) {
+        return escapeHTML(nilai);
+    }
+
+    return tanggal.toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
     });
 }
 
-function getRows(result) {
-    if (Array.isArray(result)) return result;
-    if (Array.isArray(result?.data)) return result.data;
-    if (Array.isArray(result?.records)) return result.records;
+function tampilkanPesan(pesan, jenis = "success") {
+    let toast = document.getElementById("lunelle-toast");
+
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "lunelle-toast";
+
+        Object.assign(toast.style, {
+            position: "fixed",
+            right: "20px",
+            bottom: "20px",
+            zIndex: "99999",
+            padding: "14px 20px",
+            borderRadius: "12px",
+            background: "#ffffff",
+            color: "#333333",
+            boxShadow: "0 4px 20px rgba(0,0,0,.12)",
+            maxWidth: "min(360px, calc(100vw - 40px))",
+            fontSize: "14px"
+        });
+
+        document.body.appendChild(toast);
+    }
+
+    toast.textContent = pesan;
+    toast.style.borderLeft =
+        jenis === "error" ? "4px solid #dc3545" :
+        "4px solid #198754";
+
+    toast.style.display = "block";
+
+    clearTimeout(toast.timer);
+
+    toast.timer = setTimeout(() => {
+        toast.style.display = "none";
+    }, 3500);
+}
+
+// Alias agar pemanggilan kode lama tetap kompatibel.
+function showToast(pesan, jenis = "success") {
+    tampilkanPesan(pesan, jenis);
+}
+
+function getRows(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.data)) return data.data;
     return [];
 }
 
-function getRecord(result) {
-    if (Array.isArray(result)) return result[0] || {};
-    if (Array.isArray(result?.data)) return result.data[0] || {};
-    return result?.data || result || {};
-}
-
-function getNamaPelanggan(id) {
-    const item = state.pelanggan.find(
-        (row) => String(row.id_pelanggan) === String(id)
-    );
-
-    return item?.nama_pelanggan || "Pelanggan tidak ditemukan";
-}
-
-function getNamaPaket(id) {
-    const item = state.paket.find(
-        (row) => String(row.id_paket) === String(id)
-    );
-
-    return item?.nama_paket || "Paket tidak ditemukan";
-}
-
-function getTransaksi(id) {
-    return state.transaksi.find(
-        (row) => String(row.id_transaksi) === String(id)
-    );
-}
-
-function getTotalPembayaran(idTransaksi) {
-    return state.pembayaran
-        .filter(
-            (row) =>
-                String(row.id_transaksi) === String(idTransaksi)
-        )
-        .reduce((total, row) => total + angka(row.jumlah_bayar), 0);
-}
-
-function getPiutang(transaksi) {
-    const total = angka(transaksi.total_transaksi);
-    const dibayar = getTotalPembayaran(transaksi.id_transaksi);
-
-    return Math.max(total - dibayar, 0);
-}
-
-function statusClass(status) {
-    const value = String(status || "").toLowerCase();
-
-    if (["lunas", "selesai", "berhasil"].includes(value)) {
-        return "success";
-    }
-
-    if (["dibatalkan", "batal", "gagal"].includes(value)) {
-        return "danger";
-    }
-
-    if (["proses", "berlangsung", "dp", "sebagian"].includes(value)) {
-        return "warning";
-    }
-
-    return "info";
-}
-
-function badgeStatus(status) {
-    const value = status || "Belum ada status";
-
-    return `<span class="status-badge ${statusClass(value)}">${escapeHTML(value)}</span>`;
-}
-
-function actionButtons(id, type) {
-    return `
-        <div class="table-actions">
-            <button
-                type="button"
-                class="btn-small"
-                data-action="edit"
-                data-type="${type}"
-                data-id="${escapeHTML(id)}"
-            >Edit</button>
-            <button
-                type="button"
-                class="btn-small delete"
-                data-action="delete"
-                data-type="${type}"
-                data-id="${escapeHTML(id)}"
-            >Hapus</button>
-        </div>
-    `;
+function getRecord(data) {
+    const rows = getRows(data);
+    return rows.length ? rows[0] : null;
 }
 
 /* =========================================
-   MEMUAT DATA DARI BACKEND
+   KONEKSI SUPABASE
    ========================================= */
 
+async function supabaseRequest(tabel, opsi = {}) {
+    if (
+        !SUPABASE_URL ||
+        SUPABASE_URL.includes("MASUKKAN_URL") ||
+        !SUPABASE_KEY ||
+        SUPABASE_KEY.includes("MASUKKAN_PUBLISHABLE")
+    ) {
+        throw new Error(
+            "Konfigurasi Supabase belum diisi. Gunakan URL dan publishable key dari kode lama."
+        );
+    }
 
+    const {
+        method = "GET",
+        body = null,
+        filters = {},
+        select = "*"
+    } = opsi;
 
+    const parameter = new URLSearchParams();
+
+    parameter.set("select", select);
+
+    Object.entries(filters).forEach(([kolom, nilai]) => {
+        parameter.set(kolom, nilai);
+    });
+
+    const url =
+        `${SUPABASE_URL.replace(/\/$/, "")}` +
+        `/rest/v1/${tabel}?${parameter.toString()}`;
+
+    const headers = {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json"
+    };
+
+    if (method === "POST" || method === "PATCH") {
+        headers.Prefer = "return=representation";
+    }
+
+    if (method === "DELETE") {
+        headers.Prefer = "return=representation";
+    }
+
+    const respons = await fetch(url, {
+        method,
+        headers,
+        ...(body !== null ? {
+            body: JSON.stringify(body)
+        } : {})
+    });
+
+    const teks = await respons.text();
+
+    let hasil = null;
+
+    if (teks) {
+        try {
+            hasil = JSON.parse(teks);
+        } catch {
+            hasil = teks;
+        }
+    }
+
+    if (!respons.ok) {
+        const pesan =
+            hasil?.message ||
+            hasil?.details ||
+            hasil?.hint ||
+            `HTTP ${respons.status}`;
+
+        throw new Error(pesan);
+    }
+
+    return hasil;
+}
+
+/* =========================================
+   PEMBACAAN DATA
+   ========================================= */
 
 async function loadAllData() {
+    if (sedangMemuat) return;
+
+    sedangMemuat = true;
+
     try {
         const [
             pelanggan,
@@ -282,18 +228,379 @@ async function loadAllData() {
         state.transaksi = getRows(transaksi);
         state.pembayaran = getRows(pembayaran);
 
-        state.dashboard = {};
+        renderAll();
 
     } catch (error) {
-        console.error("Gagal memuat data Supabase:", error);
+        console.error("Gagal memuat data:", error);
 
-        showToast(
-            `Gagal memuat data: ${error.message}`,
+        tampilkanPesan(
+            "Data gagal dimuat: " + error.message,
             "error"
         );
+    } finally {
+        sedangMemuat = false;
     }
+}
 
-    renderAll();
+/* =========================================
+   PENCARIAN RELASI DATA
+   ========================================= */
+
+function getNamaPelanggan(id) {
+    const data = state.pelanggan.find(
+        item => String(item.id_pelanggan) === String(id)
+    );
+
+    return data?.nama_pelanggan || "-";
+}
+
+function getNamaPaket(id) {
+    const data = state.paket.find(
+        item => String(item.id_paket) === String(id)
+    );
+
+    return data?.nama_paket || "-";
+}
+
+function getTransaksi(id) {
+    return state.transaksi.find(
+        item => String(item.id_transaksi) === String(id)
+    );
+}
+
+function getTotalPembayaran(idTransaksi) {
+    return state.pembayaran
+        .filter(item =>
+            String(item.id_transaksi) === String(idTransaksi)
+        )
+        .reduce((total, item) => {
+            return total + angka(item.jumlah_bayar);
+        }, 0);
+}
+
+function getPiutang(transaksi) {
+    const totalTagihan = angka(transaksi.total_transaksi);
+    const totalBayar = getTotalPembayaran(transaksi.id_transaksi);
+
+    return Math.max(totalTagihan - totalBayar, 0);
+}
+
+function badgeStatus(status) {
+    const aman = escapeHTML(status || "-");
+
+    const warna = String(status).toLowerCase() === "lunas"
+        ? "#198754"
+        : "#b7791f";
+
+    return `
+        <span style="
+            display:inline-block;
+            padding:5px 10px;
+            border-radius:20px;
+            background:${warna}18;
+            color:${warna};
+            font-size:12px;
+        ">
+            ${aman}
+        </span>
+    `;
+}
+
+function actionButtons(jenis, id) {
+    return `
+        <button
+            type="button"
+            data-edit="${escapeHTML(jenis)}"
+            data-id="${escapeHTML(id)}">
+            Edit
+        </button>
+
+        <button
+            type="button"
+            data-delete="${escapeHTML(jenis)}"
+            data-id="${escapeHTML(id)}">
+            Hapus
+        </button>
+    `;
+}
+
+function setIsiTabel(id, html, colspan = 1) {
+    const tabel = document.getElementById(id);
+
+    if (!tabel) return;
+
+    tabel.innerHTML = html || `
+        <tr>
+            <td colspan="${colspan}" style="text-align:center;padding:20px">
+                Belum ada data.
+            </td>
+        </tr>
+    `;
+}
+
+/* =========================================
+   DASHBOARD
+   ========================================= */
+
+function renderDashboard() {
+    const totalPendapatan = state.pembayaran.reduce(
+        (total, item) => total + angka(item.jumlah_bayar),
+        0
+    );
+
+    const totalTagihan = state.transaksi.reduce(
+        (total, item) => total + angka(item.total_transaksi),
+        0
+    );
+
+    const totalPiutang = state.transaksi.reduce(
+        (total, item) => total + getPiutang(item),
+        0
+    );
+
+    const statistik = {
+        "total-pelanggan": state.pelanggan.length,
+        "total-paket": state.paket.length,
+        "total-transaksi": state.transaksi.length,
+        "total-pendapatan": rupiah(totalPendapatan),
+        "total-piutang": rupiah(totalPiutang)
+    };
+
+    Object.entries(statistik).forEach(([id, nilai]) => {
+        const elemen = document.getElementById(id);
+
+        if (elemen) elemen.textContent = nilai;
+    });
+
+    // Nominal pada ringkasan dashboard.
+    const ringkasan = [
+        ["nilai-tagihan", totalTagihan],
+        ["nilai-pembayaran", totalPendapatan],
+        ["nilai-piutang", totalPiutang]
+    ];
+
+    ringkasan.forEach(([id, nilai]) => {
+        const elemen = document.getElementById(id);
+
+        if (elemen) elemen.textContent = rupiah(nilai);
+    });
+
+    // Lebar batang grafik.
+    const maksimum = Math.max(
+        totalTagihan,
+        totalPendapatan,
+        totalPiutang,
+        1
+    );
+
+    [
+        ["bar-tagihan", totalTagihan],
+        ["bar-pembayaran", totalPendapatan],
+        ["bar-piutang", totalPiutang]
+    ].forEach(([id, nilai]) => {
+        const elemen = document.getElementById(id);
+
+        if (elemen) {
+            elemen.style.width =
+                `${Math.min(angka(nilai) / maksimum * 100, 100)}%`;
+        }
+    });
+
+    // Tabel transaksi dashboard bila tersedia di HTML.
+    const tabelDashboard =
+        document.getElementById("dashboardTransaksi");
+
+    if (tabelDashboard) {
+        const data = [...state.transaksi]
+            .sort((a, b) =>
+                String(b.tanggal_transaksi || "")
+                    .localeCompare(String(a.tanggal_transaksi || ""))
+            )
+            .slice(0, 5);
+
+        tabelDashboard.innerHTML = data.length
+            ? data.map(item => `
+                <tr>
+                    <td>${escapeHTML(item.id_transaksi)}</td>
+                    <td>${escapeHTML(getNamaPelanggan(item.id_pelanggan))}</td>
+                    <td>${escapeHTML(getNamaPaket(item.id_paket))}</td>
+                    <td>${rupiah(item.total_transaksi)}</td>
+                    <td>${badgeStatus(item.status)}</td>
+                </tr>
+            `).join("")
+            : `<tr><td colspan="5">Belum ada transaksi.</td></tr>`;
+    }
+}
+
+/* =========================================
+   DATA PELANGGAN
+   ========================================= */
+
+function renderPelanggan() {
+    const html = state.pelanggan.map(item => `
+        <tr>
+            <td>${escapeHTML(item.nama_pelanggan)}</td>
+            <td>${escapeHTML(item.no_telepon)}</td>
+            <td>${escapeHTML(item.email)}</td>
+            <td>${escapeHTML(item.alamat)}</td>
+            <td>${actionButtons("pelanggan", item.id_pelanggan)}</td>
+        </tr>
+    `).join("");
+
+    setIsiTabel("tabel-pelanggan", html, 5);
+}
+
+/* =========================================
+   DATA PAKET WEDDING
+   ========================================= */
+
+function renderPaket() {
+    const html = state.paket.map(item => `
+        <tr>
+            <td>${escapeHTML(item.nama_paket)}</td>
+            <td>${rupiah(item.harga)}</td>
+            <td>${escapeHTML(item.deskripsi)}</td>
+            <td>${actionButtons("paket", item.id_paket)}</td>
+        </tr>
+    `).join("");
+
+    setIsiTabel("tabel-paket", html, 4);
+}
+
+/* =========================================
+   DATA TRANSAKSI WEDDING
+   ========================================= */
+
+function renderTransaksi() {
+    const html = state.transaksi.map(item => `
+        <tr>
+            <td>${escapeHTML(item.id_transaksi)}</td>
+            <td>${escapeHTML(getNamaPelanggan(item.id_pelanggan))}</td>
+            <td>${escapeHTML(getNamaPaket(item.id_paket))}</td>
+            <td>${tanggalIndonesia(item.tanggal_acara)}</td>
+            <td>${rupiah(item.total_transaksi)}</td>
+            <td>${badgeStatus(item.status)}</td>
+            <td>${actionButtons("transaksi", item.id_transaksi)}</td>
+        </tr>
+    `).join("");
+
+    setIsiTabel("tabel-transaksi", html, 7);
+}
+
+/* =========================================
+   DATA PEMBAYARAN
+   ========================================= */
+
+function renderPembayaran() {
+    const html = state.pembayaran.map(item => `
+        <tr>
+            <td>${escapeHTML(item.id_pembayaran)}</td>
+            <td>${escapeHTML(item.id_transaksi)}</td>
+            <td>${tanggalIndonesia(item.tanggal_pembayaran)}</td>
+            <td>${rupiah(item.jumlah_bayar)}</td>
+            <td>${escapeHTML(item.metode_pembayaran)}</td>
+            <td>${escapeHTML(item.keterangan)}</td>
+            <td>${actionButtons("pembayaran", item.id_pembayaran)}</td>
+        </tr>
+    `).join("");
+
+    setIsiTabel("tabel-pembayaran", html, 7);
+}
+
+/* =========================================
+   DATA PIUTANG
+   ========================================= */
+
+function renderPiutang() {
+    const html = state.transaksi.map(item => {
+        const totalBayar = getTotalPembayaran(item.id_transaksi);
+        const sisa = getPiutang(item);
+
+        return `
+            <tr>
+                <td>${escapeHTML(item.id_transaksi)}</td>
+                <td>${escapeHTML(getNamaPelanggan(item.id_pelanggan))}</td>
+                <td>${rupiah(item.total_transaksi)}</td>
+                <td>${rupiah(totalBayar)}</td>
+                <td>${rupiah(sisa)}</td>
+                <td>${badgeStatus(sisa <= 0 ? "Lunas" : "Belum Lunas")}</td>
+            </tr>
+        `;
+    }).join("");
+
+    setIsiTabel("tabel-piutang", html, 6);
+}
+
+/* =========================================
+   DROPDOWN RELASI
+   ========================================= */
+
+function isiDropdown(id, data, kolomID, pembuatLabel) {
+    const elemen = document.getElementById(id);
+
+    if (!elemen) return;
+
+    const nilaiLama = elemen.value;
+
+    elemen.innerHTML = `
+        <option value="">Pilih data</option>
+        ${data.map(item => `
+            <option value="${escapeHTML(item[kolomID])}">
+                ${escapeHTML(pembuatLabel(item))}
+            </option>
+        `).join("")}
+    `;
+
+    if (nilaiLama) {
+        elemen.value = nilaiLama;
+    }
+}
+
+function renderPilihanDropdown() {
+    isiDropdown(
+        "pilih-pelanggan",
+        state.pelanggan,
+        "id_pelanggan",
+        item => item.nama_pelanggan
+    );
+
+    isiDropdown(
+        "pilih-paket",
+        state.paket,
+        "id_paket",
+        item => `${item.nama_paket} - ${rupiah(item.harga)}`
+    );
+
+    isiDropdown(
+        "pilih-transaksi",
+        state.transaksi,
+        "id_transaksi",
+        item => `${item.id_transaksi} - ${getNamaPelanggan(item.id_pelanggan)}`
+    );
+}
+
+function isiHargaPaket() {
+    const pilihPaket = document.getElementById("pilih-paket");
+    const totalInput = document.getElementById("total-transaksi-input");
+
+    if (!pilihPaket || !totalInput) return;
+
+    const paket = state.paket.find(
+        item => String(item.id_paket) === String(pilihPaket.value)
+    );
+
+    if (paket) {
+        totalInput.value = angka(paket.harga);
+    }
+}
+
+/* =========================================
+   RENDER SEMUA BAGIAN
+   ========================================= */
+
+function renderLaporan() {
+    // Bagian laporan bersifat opsional.
+    // Fungsi ini disediakan agar renderAll tidak mengalami error.
 }
 
 function renderAll() {
@@ -303,1033 +610,517 @@ function renderAll() {
     renderTransaksi();
     renderPembayaran();
     renderPiutang();
-    renderLaporan();
     renderPilihanDropdown();
+    renderLaporan();
 }
 
 /* =========================================
    NAVIGASI HALAMAN
    ========================================= */
 
-const pageTitles = {
-    dashboard: "Dashboard",
-    pelanggan: "Data Pelanggan",
-    paket: "Paket Wedding",
-    transaksi: "Transaksi Wedding",
-    pembayaran: "Pembayaran",
-    laporan: "Laporan"
-};
+function showPage(namaHalaman) {
+    document.querySelectorAll(".page").forEach(halaman => {
+        halaman.classList.remove("active");
+    });
 
+    const target = document.getElementById(`${namaHalaman}-page`);
 
-function showPage(page) {
-    document.querySelectorAll(".page").forEach((section) => {
-        section.classList.toggle(
+    if (target) {
+        target.classList.add("active");
+    }
+
+    document.querySelectorAll("[data-page]").forEach(tombol => {
+        tombol.classList.toggle(
             "active",
-            section.id === `${page}-page`
+            tombol.dataset.page === namaHalaman
         );
     });
 
-    document.querySelectorAll(".nav-link[data-page]").forEach((link) => {
-        link.classList.toggle("active", link.dataset.page === page);
-    });
-
-    const judul = document.getElementById("page-title");
-
-    
-    const daftarJudul = {
+    const judul = {
         dashboard: "Dashboard",
-        pelanggan: "Pelanggan",
+        pelanggan: "Data Pelanggan",
         paket: "Paket Wedding",
         transaksi: "Transaksi Wedding",
         pembayaran: "Pembayaran",
-        piutang: "Piutang",
-        laporan: "Laporan"
+        piutang: "Piutang"
     };
 
-    if (judul) {
-        judul.textContent = daftarJudul[page] || "Lunelle Wedding";
+    const elemenJudul = document.getElementById("page-title");
+
+    if (elemenJudul) {
+        elemenJudul.textContent = judul[namaHalaman] || "Lunelle Wedding";
     }
 }
 
 function setupNavigation() {
-    document.querySelectorAll(".nav-link[data-page]").forEach((link) => {
-        link.addEventListener("click", (event) => {
+    document.querySelectorAll("[data-page]").forEach(tombol => {
+        tombol.addEventListener("click", event => {
             event.preventDefault();
-            showPage(link.dataset.page);
-        });
-    });
-
-    document.querySelectorAll("[data-go]").forEach((button) => {
-        button.addEventListener("click", () => {
-            showPage(button.dataset.go);
+            showPage(tombol.dataset.page);
         });
     });
 }
 
-
 /* =========================================
-   DASHBOARD
+   FORM: BANTUAN
    ========================================= */
 
-function renderDashboard() {
-    const totalPendapatan = state.pembayaran.reduce(
-        (total, row) => total + angka(row.jumlah_bayar),
-        0
-    );
+function nilaiForm(form, nama) {
+    const elemen = form.elements.namedItem(nama);
+    return elemen ? elemen.value.trim() : "";
+}
 
-    const totalTagihan = state.transaksi.reduce(
-        (total, row) => total + angka(row.total_transaksi),
-        0
-    );
+function ambilID(form, nama) {
+    const elemen = form.elements.namedItem(nama);
+    return elemen ? elemen.value.trim() : "";
+}
 
-    const totalPiutang = state.transaksi.reduce(
-        (total, row) => total + getPiutang(row),
-        0
-    );
+function dataForm(form, namaKolom) {
+    const data = {};
 
-    // Memperbarui kartu statistik
-    if ($("total-pendapatan")) {
-        $("total-pendapatan").textContent = rupiah(totalPendapatan);
-    }
+    namaKolom.forEach(nama => {
+        const nilai = nilaiForm(form, nama);
 
-    if ($("total-piutang")) {
-        $("total-piutang").textContent = rupiah(totalPiutang);
-    }
-
-    if ($("total-transaksi")) {
-        $("total-transaksi").textContent = state.transaksi.length;
-    }
-
-    if ($("total-pelanggan")) {
-        $("total-pelanggan").textContent = state.pelanggan.length;
-    }
-
-    if ($("total-paket")) {
-        $("total-paket").textContent = state.paket.length;
-    }
-
-    // Memperbarui diagram keuangan
-    const maksimum = Math.max(
-        totalTagihan,
-        totalPendapatan,
-        totalPiutang,
-        1
-    );
-
-    const dataDiagram = [
-        {
-            bar: "bar-tagihan",
-            label: "nilai-tagihan",
-            nilai: totalTagihan
-        },
-        {
-            bar: "bar-pembayaran",
-            label: "nilai-pembayaran",
-            nilai: totalPendapatan
-        },
-        {
-            bar: "bar-piutang",
-            label: "nilai-piutang",
-            nilai: totalPiutang
-        }
-    ];
-
-    dataDiagram.forEach((item) => {
-        const batang = document.getElementById(item.bar);
-        const label = document.getElementById(item.label);
-
-        if (batang) {
-            batang.style.width =
-                `${(item.nilai / maksimum) * 100}%`;
-        }
-
-        if (label) {
-            label.textContent = rupiah(item.nilai);
+        if (nilai !== "") {
+            data[nama] = nilai;
         }
     });
 
-    // Memperbarui tabel transaksi terbaru jika tersedia
-    const table = $("dashboardTransaksi");
+    return data;
+}
 
-    if (table) {
-        const latest = [...state.transaksi]
-            .sort((a, b) =>
-                new Date(b.tanggal_transaksi || 0) -
-                new Date(a.tanggal_transaksi || 0)
-            )
-            .slice(0, 5);
+function resetForm(formID) {
+    const form = document.getElementById(formID);
 
-        if (!latest.length) {
-            table.innerHTML = `
-                <tr>
-                    <td colspan="6">Belum ada transaksi wedding.</td>
-                </tr>
-            `;
-        } else {
-            table.innerHTML = latest.map((row) => `
-                <tr>
-                    <td>${escapeHTML(row.id_transaksi)}</td>
-                    <td>${escapeHTML(getNamaPelanggan(row.id_pelanggan))}</td>
-                    <td>${escapeHTML(getNamaPaket(row.id_paket))}</td>
-                    <td>${rupiah(row.total_transaksi)}</td>
-                    <td>${badgeStatus(row.status)}</td>
-                    <td>${tanggalIndonesia(row.tanggal_acara)}</td>
-                </tr>
-            `).join("");
-        }
-    }
+    if (form) form.reset();
+}
+
+function tampilkanForm(formID, tampil = true) {
+    const form = document.getElementById(formID);
+
+    if (!form) return;
+
+    // Menampilkan form atau card pembungkus jika ditemukan.
+    const pembungkus =
+        form.closest(".form-card") ||
+        form.closest(".form-container") ||
+        form;
+
+    pembungkus.classList.toggle("hidden", !tampil);
+}
+
+function tutupForm(formID) {
+    resetForm(formID);
+    tampilkanForm(formID, false);
 }
 
 /* =========================================
-   PELANGGAN
+   SIMPAN PELANGGAN
    ========================================= */
-
-function renderPelanggan() {
-    const table = $("tabel-pelanggan");
-    if (!table) return;
-
-    const keyword = ($("cariPelanggan")?.value || "").toLowerCase();
-
-    const data = state.pelanggan.filter((row) =>
-        [
-            row.nama_pelanggan,
-            row.no_telepon,
-            row.email,
-            row.alamat
-        ].some((value) =>
-            String(value || "").toLowerCase().includes(keyword)
-        )
-    );
-
-    if (!data.length) {
-        table.innerHTML = `
-            <tr><td colspan="6">Data pelanggan belum tersedia.</td></tr>
-        `;
-        return;
-    }
-
-    table.innerHTML = data.map((row) => `
-        <tr>
-            <td>${escapeHTML(row.id_pelanggan)}</td>
-            <td>${escapeHTML(row.nama_pelanggan)}</td>
-            <td>${escapeHTML(row.no_telepon || "-")}</td>
-            <td>${escapeHTML(row.email || "-")}</td>
-            <td>${escapeHTML(row.alamat || "-")}</td>
-            <td>${actionButtons(row.id_pelanggan, "pelanggan")}</td>
-        </tr>
-    `).join("");
-}
-
-function resetFormPelanggan() {
-    $("formPelanggan")?.reset();
-    if ($("idPelanggan")) $("idPelanggan").value = "";
-
-    if ($("judulFormPelanggan")) {
-        $("judulFormPelanggan").textContent = "Tambah Pelanggan";
-    }
-}
-
-function editPelanggan(id) {
-    const row = state.pelanggan.find(function (item) {
-        return String(item.id_pelanggan) === String(id);
-    });
-
-    if (!row) {
-        alert("Data pelanggan tidak ditemukan.");
-        return;
-    }
-
-    const form = document.getElementById("form-pelanggan");
-
-    if (!form) {
-        alert("Form pelanggan tidak ditemukan.");
-        return;
-    }
-
-    form.querySelector('[name="id_pelanggan"]').value =
-        row.id_pelanggan;
-
-    form.querySelector('[name="nama_pelanggan"]').value =
-        row.nama_pelanggan || "";
-
-    form.querySelector('[name="no_telepon"]').value =
-        row.no_telepon || "";
-
-    form.querySelector('[name="email"]').value =
-        row.email || "";
-
-    form.querySelector('[name="alamat"]').value =
-        row.alamat || "";
-
-    form.classList.remove("hidden");
-
-    form.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-    });
-}
-
 
 async function savePelanggan(event) {
     event.preventDefault();
 
-    const form = $("form-pelanggan");
+    const form = event.currentTarget;
+    const id = ambilID(form, "id_pelanggan");
 
-    if (!form) {
-        showToast("Form pelanggan tidak ditemukan.", "error");
-        return;
-    }
-
-    const id = form.elements.namedItem("id_pelanggan").value;
-
-    const payload = {
-        nama_pelanggan: form.elements.namedItem("nama_pelanggan").value.trim(),
-        no_telepon: form.elements.namedItem("no_telepon").value.trim(),
-        email: form.elements.namedItem("email").value.trim(),
-        alamat: form.elements.namedItem("alamat").value.trim()
-    };
-
-    if (!payload.nama_pelanggan) {
-        showToast("Nama pelanggan wajib diisi.", "error");
-        return;
-    }
+    const payload = dataForm(form, [
+        "nama_pelanggan",
+        "no_telepon",
+        "email",
+        "alamat"
+    ]);
 
     try {
-        await apiRequest(
-            id
-                ? `/api/pelanggan/${encodeURIComponent(id)}`
-                : "/api/pelanggan",
-            {
-                method: id ? "PATCH" : "POST",
-                body: JSON.stringify(payload)
-            }
-        );
+        if (id) {
+            await supabaseRequest("pelanggan", {
+                method: "PATCH",
+                filters: { id_pelanggan: `eq.${id}` },
+                body: payload
+            });
+        } else {
+            await supabaseRequest("pelanggan", {
+                method: "POST",
+                body: payload
+            });
+        }
 
-        showToast(
-            id
-                ? "Data pelanggan berhasil diperbarui."
-                : "Pelanggan berhasil ditambahkan."
-        );
-
-        form.reset();
-        form.classList.add("hidden");
-
+        resetForm("form-pelanggan");
+        tampilkanForm("form-pelanggan", false);
         await loadAllData();
+
+        tampilkanPesan("Data pelanggan berhasil disimpan.");
     } catch (error) {
-        console.error("Gagal menyimpan pelanggan:", error);
-        showToast(error.message || "Gagal menyimpan pelanggan.", "error");
+        tampilkanPesan("Gagal menyimpan pelanggan: " + error.message, "error");
     }
 }
 
 /* =========================================
-   PAKET WEDDING
+   SIMPAN PAKET
    ========================================= */
-
-function renderPaket() {
-    const table = $("tabel-paket");
-    if (!table) return;
-
-    const keyword = ($("cariPaket")?.value || "").toLowerCase();
-
-    const data = state.paket.filter((row) =>
-        [
-            row.nama_paket,
-            row.deskripsi
-        ].some((value) =>
-            String(value || "").toLowerCase().includes(keyword)
-        )
-    );
-
-    if (!data.length) {
-        table.innerHTML = `
-            <tr><td colspan="5">Data paket wedding belum tersedia.</td></tr>
-        `;
-        return;
-    }
-
-    table.innerHTML = data.map((row) => `
-        <tr>
-            <td>${escapeHTML(row.id_paket)}</td>
-            <td>${escapeHTML(row.nama_paket)}</td>
-            <td>${rupiah(row.harga)}</td>
-            <td>${escapeHTML(row.deskripsi || "-")}</td>
-            <td>${actionButtons(row.id_paket, "paket")}</td>
-        </tr>
-    `).join("");
-}
-
-function resetFormPaket() {
-    $("formPaket")?.reset();
-    if ($("idPaket")) $("idPaket").value = "";
-
-    if ($("judulFormPaket")) {
-        $("judulFormPaket").textContent = "Tambah Paket Wedding";
-    }
-}
-
-function editPaket(id) {
-    const row = state.paket.find(
-        (item) => String(item.id_paket) === String(id)
-    );
-
-    if (!row) return;
-
-    $("idPaket").value = row.id_paket;
-    $("namaPaket").value = row.nama_paket || "";
-    $("hargaPaket").value = row.harga || "";
-    $("deskripsiPaket").value = row.deskripsi || "";
-
-    $("judulFormPaket").textContent = "Edit Paket Wedding";
-    $("formPaketCard").hidden = false;
-    $("formPaketCard").scrollIntoView({ behavior: "smooth" });
-}
 
 async function savePaket(event) {
     event.preventDefault();
 
-    const id = $("idPaket").value;
+    const form = event.currentTarget;
+    const id = ambilID(form, "id_paket");
 
-    const payload = {
-        nama_paket: $("namaPaket").value.trim(),
-        harga: angka($("hargaPaket").value),
-        deskripsi: $("deskripsiPaket").value.trim()
-    };
+    const payload = dataForm(form, [
+        "nama_paket",
+        "harga",
+        "deskripsi"
+    ]);
 
-    if (!payload.nama_paket || payload.harga <= 0) {
-        showToast("Nama paket dan harga yang valid wajib diisi.", "error");
-        return;
+    if (payload.harga !== undefined) {
+        payload.harga = angka(payload.harga);
     }
 
     try {
-        await apiRequest(
-            id ? `/api/paket/${encodeURIComponent(id)}` : "/api/paket",
-            {
-                method: id ? "PATCH" : "POST",
-                body: JSON.stringify(payload)
-            }
-        );
+        if (id) {
+            await supabaseRequest("paket_wedding", {
+                method: "PATCH",
+                filters: { id_paket: `eq.${id}` },
+                body: payload
+            });
+        } else {
+            await supabaseRequest("paket_wedding", {
+                method: "POST",
+                body: payload
+            });
+        }
 
-        showToast(id ? "Paket berhasil diperbarui." : "Paket berhasil ditambahkan.");
-        resetFormPaket();
-        $("formPaketCard").hidden = true;
+        resetForm("form-paket");
+        tampilkanForm("form-paket", false);
         await loadAllData();
+
+        tampilkanPesan("Data paket berhasil disimpan.");
     } catch (error) {
-        showToast(error.message, "error");
+        tampilkanPesan("Gagal menyimpan paket: " + error.message, "error");
     }
 }
 
 /* =========================================
-   TRANSAKSI WEDDING
+   SIMPAN TRANSAKSI
    ========================================= */
-
-function renderTransaksi() {
-    const table = $("tabel-transaksi");
-    if (!table) return;
-
-    const keyword = ($("cariTransaksi")?.value || "").toLowerCase();
-
-    const data = state.transaksi.filter((row) =>
-        [
-            row.id_transaksi,
-            getNamaPelanggan(row.id_pelanggan),
-            getNamaPaket(row.id_paket),
-            row.status,
-            row.tanggal_acara
-        ].some((value) =>
-            String(value || "").toLowerCase().includes(keyword)
-        )
-    );
-
-    if (!data.length) {
-        table.innerHTML = `
-            <tr><td colspan="7">Data transaksi belum tersedia.</td></tr>
-        `;
-        return;
-    }
-
-    table.innerHTML = data.map((row) => `
-        <tr>
-            <td>${escapeHTML(row.id_transaksi)}</td>
-            <td>${escapeHTML(getNamaPelanggan(row.id_pelanggan))}</td>
-            <td>${escapeHTML(getNamaPaket(row.id_paket))}</td>
-            <td>${tanggalIndonesia(row.tanggal_transaksi)}</td>
-            <td>${tanggalIndonesia(row.tanggal_acara)}</td>
-            <td>${rupiah(row.total_transaksi)}</td>
-            <td>
-                ${badgeStatus(row.status)}
-                ${actionButtons(row.id_transaksi, "transaksi")}
-            </td>
-        </tr>
-    `).join("");
-}
-
-function renderPilihanDropdown() {
-    const pelangganSelect = $("pilihPelanggan");
-    if (pelangganSelect) {
-        const selected = pelangganSelect.value;
-
-        pelangganSelect.innerHTML = `
-            <option value="">Pilih pelanggan</option>
-            ${state.pelanggan.map((row) => `
-                <option value="${escapeHTML(row.id_pelanggan)}">
-                    ${escapeHTML(row.nama_pelanggan)}
-                </option>
-            `).join("")}
-        `;
-
-        pelangganSelect.value = selected;
-    }
-
-    const paketSelect = $("pilihPaket");
-    if (paketSelect) {
-        const selected = paketSelect.value;
-
-        paketSelect.innerHTML = `
-            <option value="">Pilih paket wedding</option>
-            ${state.paket.map((row) => `
-                <option value="${escapeHTML(row.id_paket)}">
-                    ${escapeHTML(row.nama_paket)} — ${rupiah(row.harga)}
-                </option>
-            `).join("")}
-        `;
-
-        paketSelect.value = selected;
-    }
-
-    const transaksiSelect = $("pilihTransaksiBayar");
-    if (transaksiSelect) {
-        const selected = transaksiSelect.value;
-
-        transaksiSelect.innerHTML = `
-            <option value="">Pilih transaksi</option>
-            ${state.transaksi.map((row) => `
-                <option value="${escapeHTML(row.id_transaksi)}">
-                    #${escapeHTML(row.id_transaksi)} — ${escapeHTML(getNamaPelanggan(row.id_pelanggan))}
-                    (${rupiah(row.total_transaksi)})
-                </option>
-            `).join("")}
-        `;
-
-        transaksiSelect.value = selected;
-    }
-}
-
-function resetFormTransaksi() {
-    $("formTransaksi")?.reset();
-    if ($("idTransaksi")) $("idTransaksi").value = "";
-
-    if ($("judulFormTransaksi")) {
-        $("judulFormTransaksi").textContent = "Tambah Transaksi";
-    }
-}
-
-function editTransaksi(id) {
-    const row = state.transaksi.find(
-        (item) => String(item.id_transaksi) === String(id)
-    );
-
-    if (!row) return;
-
-    $("idTransaksi").value = row.id_transaksi;
-    $("pilihPelanggan").value = row.id_pelanggan || "";
-    $("pilihPaket").value = row.id_paket || "";
-    $("tanggalTransaksi").value = row.tanggal_transaksi || "";
-    $("tanggalAcara").value = row.tanggal_acara || "";
-    $("totalTransaksiInput").value = row.total_transaksi || "";
-    $("statusTransaksi").value = row.status || "Belum Lunas";
-
-    $("judulFormTransaksi").textContent = "Edit Transaksi";
-    $("formTransaksiCard").hidden = false;
-    $("formTransaksiCard").scrollIntoView({ behavior: "smooth" });
-}
-
-function isiHargaPaket() {
-    const paket = state.paket.find(
-        (row) => String(row.id_paket) === String($("pilihPaket")?.value)
-    );
-
-    if (paket && $("totalTransaksiInput")) {
-        $("totalTransaksiInput").value = paket.harga;
-    }
-}
 
 async function saveTransaksi(event) {
     event.preventDefault();
 
-    const id = $("idTransaksi").value;
+    const form = event.currentTarget;
+    const id = ambilID(form, "id_transaksi");
 
-    const payload = {
-        id_pelanggan: $("pilihPelanggan").value,
-        id_paket: $("pilihPaket").value,
-        tanggal_transaksi: $("tanggalTransaksi").value,
-        tanggal_acara: $("tanggalAcara").value,
-        total_transaksi: angka($("totalTransaksiInput").value),
-        status: $("statusTransaksi").value
-    };
+    const payload = dataForm(form, [
+        "id_pelanggan",
+        "id_paket",
+        "tanggal_transaksi",
+        "tanggal_acara",
+        "total_transaksi",
+        "status"
+    ]);
 
-    if (
-        !payload.id_pelanggan ||
-        !payload.id_paket ||
-        !payload.tanggal_transaksi ||
-        !payload.tanggal_acara ||
-        payload.total_transaksi <= 0
-    ) {
-        showToast("Lengkapi seluruh data transaksi terlebih dahulu.", "error");
-        return;
+    if (payload.total_transaksi !== undefined) {
+        payload.total_transaksi = angka(payload.total_transaksi);
     }
 
     try {
-        await apiRequest(
-            id ? `/api/transaksi/${encodeURIComponent(id)}` : "/api/transaksi",
-            {
-                method: id ? "PATCH" : "POST",
-                body: JSON.stringify(payload)
-            }
-        );
+        if (id) {
+            await supabaseRequest("transaksi_wedding", {
+                method: "PATCH",
+                filters: { id_transaksi: `eq.${id}` },
+                body: payload
+            });
+        } else {
+            await supabaseRequest("transaksi_wedding", {
+                method: "POST",
+                body: payload
+            });
+        }
 
-        showToast(id ? "Transaksi berhasil diperbarui." : "Transaksi berhasil ditambahkan.");
-        resetFormTransaksi();
-        $("formTransaksiCard").hidden = true;
+        resetForm("form-transaksi");
+        tampilkanForm("form-transaksi", false);
         await loadAllData();
+
+        tampilkanPesan("Transaksi berhasil disimpan.");
     } catch (error) {
-        showToast(error.message, "error");
+        tampilkanPesan("Gagal menyimpan transaksi: " + error.message, "error");
     }
 }
 
 /* =========================================
-   PEMBAYARAN
+   SIMPAN PEMBAYARAN
    ========================================= */
-
-function renderPembayaran() {
-    const table = $("tabel-pembayaran");
-    if (!table) return;
-
-    const keyword = ($("cariPembayaran")?.value || "").toLowerCase();
-
-    const data = state.pembayaran.filter((row) =>
-        [
-            row.id_pembayaran,
-            row.id_transaksi,
-            getNamaPelanggan(
-                getTransaksi(row.id_transaksi)?.id_pelanggan
-            ),
-            row.metode_pembayaran,
-            row.keterangan
-        ].some((value) =>
-            String(value || "").toLowerCase().includes(keyword)
-        )
-    );
-
-    if (!data.length) {
-        table.innerHTML = `
-            <tr><td colspan="7">Data pembayaran belum tersedia.</td></tr>
-        `;
-        return;
-    }
-
-    table.innerHTML = data.map((row) => `
-        <tr>
-            <td>${escapeHTML(row.id_pembayaran)}</td>
-            <td>${escapeHTML(row.id_transaksi)}</td>
-            <td>${escapeHTML(getNamaPelanggan(
-                getTransaksi(row.id_transaksi)?.id_pelanggan
-            ))}</td>
-            <td>${tanggalIndonesia(row.tanggal_pembayaran)}</td>
-            <td>${rupiah(row.jumlah_bayar)}</td>
-            <td>${escapeHTML(row.metode_pembayaran || "-")}</td>
-            <td>${actionButtons(row.id_pembayaran, "pembayaran")}</td>
-        </tr>
-    `).join("");
-}
-
-
-function renderPiutang() {
-    const table = $("tabel-piutang");
-    if (!table) return;
-
-    if (!state.transaksi.length) {
-        table.innerHTML = `
-            <tr>
-                <td colspan="6">Belum ada transaksi wedding.</td>
-            </tr>
-        `;
-        return;
-    }
-
-    table.innerHTML = state.transaksi.map((row) => {
-        const totalTagihan = angka(row.total_transaksi);
-        const totalDibayar = getTotalPembayaran(row.id_transaksi);
-        const sisaPiutang = getPiutang(row);
-
-        return `
-            <tr>
-                <td>${escapeHTML(row.id_transaksi)}</td>
-                <td>${escapeHTML(getNamaPelanggan(row.id_pelanggan))}</td>
-                <td>${escapeHTML(getNamaPaket(row.id_paket))}</td>
-                <td>${rupiah(totalTagihan)}</td>
-                <td>${rupiah(totalDibayar)}</td>
-                <td>${rupiah(sisaPiutang)}</td>
-            </tr>
-        `;
-    }).join("");
-}
-
-
-function resetFormPembayaran() {
-    $("formPembayaran")?.reset();
-    if ($("idPembayaran")) $("idPembayaran").value = "";
-}
 
 async function savePembayaran(event) {
     event.preventDefault();
 
-    const id = $("idPembayaran")?.value || "";
+    const form = event.currentTarget;
+    const id = ambilID(form, "id_pembayaran");
 
-    const payload = {
-        id_transaksi: $("pilihTransaksiBayar").value,
-        tanggal_pembayaran: $("tanggalPembayaran").value,
-        jumlah_bayar: angka($("jumlahBayar").value),
-        metode_pembayaran: $("metodePembayaran").value,
-        keterangan: $("keteranganPembayaran").value.trim()
-    };
+    const payload = dataForm(form, [
+        "id_transaksi",
+        "tanggal_pembayaran",
+        "jumlah_bayar",
+        "metode_pembayaran",
+        "keterangan"
+    ]);
 
-    if (
-        !payload.id_transaksi ||
-        !payload.tanggal_pembayaran ||
-        payload.jumlah_bayar <= 0 ||
-        !payload.metode_pembayaran
-    ) {
-        showToast("Lengkapi data pembayaran dengan benar.", "error");
-        return;
-    }
-
-    const transaksi = getTransaksi(payload.id_transaksi);
-
-    if (transaksi) {
-        const totalBayarSebelumnya = getTotalPembayaran(transaksi.id_transaksi);
-        const batasPembayaran =
-            angka(transaksi.total_transaksi) - totalBayarSebelumnya;
-
-        if (!id && payload.jumlah_bayar > batasPembayaran) {
-            showToast(
-                `Pembayaran melebihi sisa tagihan ${rupiah(batasPembayaran)}.`,
-                "error"
-            );
-            return;
-        }
+    if (payload.jumlah_bayar !== undefined) {
+        payload.jumlah_bayar = angka(payload.jumlah_bayar);
     }
 
     try {
-        await apiRequest(
-            id ? `/api/pembayaran/${encodeURIComponent(id)}` : "/api/pembayaran",
-            {
-                method: id ? "PATCH" : "POST",
-                body: JSON.stringify(payload)
-            }
-        );
+        if (id) {
+            await supabaseRequest("pembayaran", {
+                method: "PATCH",
+                filters: { id_pembayaran: `eq.${id}` },
+                body: payload
+            });
+        } else {
+            await supabaseRequest("pembayaran", {
+                method: "POST",
+                body: payload
+            });
+        }
 
-        showToast(id ? "Pembayaran berhasil diperbarui." : "Pembayaran berhasil dicatat.");
-        resetFormPembayaran();
-        $("formPembayaranCard").hidden = true;
+        resetForm("form-pembayaran");
+        tampilkanForm("form-pembayaran", false);
         await loadAllData();
+
+        tampilkanPesan("Pembayaran berhasil disimpan.");
     } catch (error) {
-        showToast(error.message, "error");
+        tampilkanPesan("Gagal menyimpan pembayaran: " + error.message, "error");
     }
 }
 
-function editPembayaran(id) {
-    const row = state.pembayaran.find(
-        (item) => String(item.id_pembayaran) === String(id)
+/* =========================================
+   EDIT DATA
+   ========================================= */
+
+function editPelanggan(id) {
+    const item = state.pelanggan.find(
+        data => String(data.id_pelanggan) === String(id)
     );
 
-    if (!row) return;
+    if (!item) return;
 
-    $("idPembayaran").value = row.id_pembayaran;
-    $("pilihTransaksiBayar").value = row.id_transaksi || "";
-    $("tanggalPembayaran").value = row.tanggal_pembayaran || "";
-    $("jumlahBayar").value = row.jumlah_bayar || "";
-    $("metodePembayaran").value = row.metode_pembayaran || "";
-    $("keteranganPembayaran").value = row.keterangan || "";
+    const form = document.getElementById("form-pelanggan");
+    if (!form) return;
 
-    $("formPembayaranCard").hidden = false;
-    $("formPembayaranCard").scrollIntoView({ behavior: "smooth" });
+    Object.entries(item).forEach(([nama, nilai]) => {
+        const input = form.elements.namedItem(nama);
+        if (input) input.value = nilai ?? "";
+    });
+
+    tampilkanForm("form-pelanggan", true);
+}
+
+function editPaket(id) {
+    const item = state.paket.find(
+        data => String(data.id_paket) === String(id)
+    );
+
+    if (!item) return;
+
+    const form = document.getElementById("form-paket");
+    if (!form) return;
+
+    Object.entries(item).forEach(([nama, nilai]) => {
+        const input = form.elements.namedItem(nama);
+        if (input) input.value = nilai ?? "";
+    });
+
+    tampilkanForm("form-paket", true);
+}
+
+function editTransaksi(id) {
+    const item = state.transaksi.find(
+        data => String(data.id_transaksi) === String(id)
+    );
+
+    if (!item) return;
+
+    const form = document.getElementById("form-transaksi");
+    if (!form) return;
+
+    Object.entries(item).forEach(([nama, nilai]) => {
+        const input = form.elements.namedItem(nama);
+        if (input) input.value = nilai ?? "";
+    });
+
+    tampilkanForm("form-transaksi", true);
+}
+
+function editPembayaran(id) {
+    const item = state.pembayaran.find(
+        data => String(data.id_pembayaran) === String(id)
+    );
+
+    if (!item) return;
+
+    const form = document.getElementById("form-pembayaran");
+    if (!form) return;
+
+    Object.entries(item).forEach(([nama, nilai]) => {
+        const input = form.elements.namedItem(nama);
+        if (input) input.value = nilai ?? "";
+    });
+
+    tampilkanForm("form-pembayaran", true);
 }
 
 /* =========================================
    HAPUS DATA
    ========================================= */
 
-async function deleteRecord(type, id) {
-    const config = {
+async function deleteRecord(jenis, id) {
+    const konfigurasi = {
         pelanggan: {
-            endpoint: "/api/pelanggan",
-            name: "pelanggan"
+            tabel: "pelanggan",
+            kolom: "id_pelanggan"
         },
         paket: {
-            endpoint: "/api/paket",
-            name: "paket wedding"
+            tabel: "paket_wedding",
+            kolom: "id_paket"
         },
         transaksi: {
-            endpoint: "/api/transaksi",
-            name: "transaksi"
+            tabel: "transaksi_wedding",
+            kolom: "id_transaksi"
         },
         pembayaran: {
-            endpoint: "/api/pembayaran",
-            name: "pembayaran"
+            tabel: "pembayaran",
+            kolom: "id_pembayaran"
         }
     };
 
-    const item = config[type];
+    const item = konfigurasi[jenis];
+
     if (!item) return;
 
-    const confirmed = confirm(
-        `Yakin ingin menghapus data ${item.name} ini?`
-    );
+    const yakin = confirm("Yakin ingin menghapus data ini?");
 
-    if (!confirmed) return;
+    if (!yakin) return;
 
     try {
-        await apiRequest(
-            `${item.endpoint}/${encodeURIComponent(id)}`,
-            { method: "DELETE" }
-        );
+        await supabaseRequest(item.tabel, {
+            method: "DELETE",
+            filters: {
+                [item.kolom]: `eq.${id}`
+            }
+        });
 
-        showToast(`Data ${item.name} berhasil dihapus.`);
         await loadAllData();
+
+        tampilkanPesan("Data berhasil dihapus.");
     } catch (error) {
-        showToast(
-            `Data gagal dihapus: ${error.message}`,
+        tampilkanPesan(
+            "Gagal menghapus data: " + error.message,
             "error"
         );
     }
 }
 
-function setupTableActions() {
-    document.addEventListener("click", (event) => {
-        const button = event.target.closest("[data-action]");
-        if (!button) return;
+/* =========================================
+   EVENT FORM DAN TOMBOL
+   ========================================= */
 
-        const { action, type, id } = button.dataset;
+function setupForms() {
+    const konfigurasiForm = [
+        ["form-pelanggan", savePelanggan],
+        ["form-paket", savePaket],
+        ["form-transaksi", saveTransaksi],
+        ["form-pembayaran", savePembayaran]
+    ];
 
-        if (action === "delete") {
-            deleteRecord(type, id);
-            return;
+    konfigurasiForm.forEach(([id, handler]) => {
+        const form = document.getElementById(id);
+
+        if (form) {
+            form.addEventListener("submit", handler);
         }
+    });
 
-        if (action === "edit") {
-            const editFunctions = {
+    const tombolTambah = [
+        ["tambah-pelanggan", "form-pelanggan"],
+        ["tambah-paket", "form-paket"],
+        ["tambah-transaksi", "form-transaksi"],
+        ["tambah-pembayaran", "form-pembayaran"]
+    ];
+
+    tombolTambah.forEach(([tombolID, formID]) => {
+        const tombol = document.getElementById(tombolID);
+
+        if (tombol) {
+            tombol.addEventListener("click", () => {
+                resetForm(formID);
+                tampilkanForm(formID, true);
+            });
+        }
+    });
+
+    document.querySelectorAll("[data-cancel], [data-close]").forEach(tombol => {
+        tombol.addEventListener("click", () => {
+            const form = tombol.closest("form");
+
+            if (form) {
+                resetForm(form.id);
+                tampilkanForm(form.id, false);
+            }
+        });
+    });
+
+    const pilihPaket = document.getElementById("pilih-paket");
+
+    if (pilihPaket) {
+        pilihPaket.addEventListener("change", isiHargaPaket);
+    }
+}
+
+/* =========================================
+   AKSI TABEL
+   ========================================= */
+
+function setupTableActions() {
+    document.addEventListener("click", event => {
+        const tombolEdit = event.target.closest("[data-edit]");
+        const tombolHapus = event.target.closest("[data-delete]");
+
+        if (tombolEdit) {
+            const jenis = tombolEdit.dataset.edit;
+            const id = tombolEdit.dataset.id;
+
+            const fungsiEdit = {
                 pelanggan: editPelanggan,
                 paket: editPaket,
                 transaksi: editTransaksi,
                 pembayaran: editPembayaran
             };
 
-            editFunctions[type]?.(id);
+            if (fungsiEdit[jenis]) {
+                fungsiEdit[jenis](id);
+            }
         }
-    });
-}
 
-/* =========================================
-   LAPORAN
-   ========================================= */
-
-function renderLaporan() {
-    const pendapatan = state.pembayaran.reduce(
-        (total, row) => total + angka(row.jumlah_bayar),
-        0
-    );
-
-    const piutang = state.transaksi.reduce(
-        (total, row) => total + getPiutang(row),
-        0
-    );
-
-    if ($("laporanPendapatan")) {
-        $("laporanPendapatan").textContent = rupiah(pendapatan);
-    }
-
-    if ($("laporanPiutang")) {
-        $("laporanPiutang").textContent = rupiah(piutang);
-    }
-
-    if ($("laporanTransaksi")) {
-        $("laporanTransaksi").textContent = state.transaksi.length;
-    }
-
-    const table = $("tabelLaporan");
-    if (!table) return;
-
-    if (!state.transaksi.length) {
-        table.innerHTML = `
-            <tr><td colspan="7">Belum ada data untuk dilaporkan.</td></tr>
-        `;
-        return;
-    }
-
-    table.innerHTML = state.transaksi.map((row) => {
-        const dibayar = getTotalPembayaran(row.id_transaksi);
-        const sisa = getPiutang(row);
-
-        return `
-            <tr>
-                <td>${escapeHTML(row.id_transaksi)}</td>
-                <td>${escapeHTML(getNamaPelanggan(row.id_pelanggan))}</td>
-                <td>${escapeHTML(getNamaPaket(row.id_paket))}</td>
-                <td>${rupiah(row.total_transaksi)}</td>
-                <td>${rupiah(dibayar)}</td>
-                <td>${rupiah(sisa)}</td>
-                <td>${sisa <= 0 ? badgeStatus("Lunas") : badgeStatus("Belum Lunas")}</td>
-            </tr>
-        `;
-    }).join("");
-}
-
-/* =========================================
-   FORM, PENCARIAN, DAN TOMBOL
-   ========================================= */
-
-
-function setupForms() {
-    // Tombol untuk membuka form tambah data
-    const daftarForm = [
-        {
-            tombol: "tambah-pelanggan",
-            form: "form-pelanggan"
-        },
-        {
-            tombol: "tambah-paket",
-            form: "form-paket"
-        },
-        {
-            tombol: "tambah-transaksi",
-            form: "form-transaksi"
-        },
-        {
-            tombol: "tambah-pembayaran",
-            form: "form-pembayaran"
-        }
-    ];
-
-    daftarForm.forEach(({ tombol, form }) => {
-        const btn = $(tombol);
-        const formElement = $(form);
-
-        if (!btn || !formElement) {
-            console.warn(
-                "Elemen tidak ditemukan:",
-                tombol,
-                form
+        if (tombolHapus) {
+            deleteRecord(
+                tombolHapus.dataset.delete,
+                tombolHapus.dataset.id
             );
-            return;
         }
-
-        btn.addEventListener("click", () => {
-            formElement.reset();
-            formElement.classList.remove("hidden");
-
-            formElement.scrollIntoView({
-                behavior: "smooth",
-                block: "start"
-            });
-        });
     });
-
-    // Event untuk menyimpan data
-    $("form-pelanggan")?.addEventListener(
-        "submit",
-        savePelanggan
-    );
-
-    $("form-paket")?.addEventListener(
-        "submit",
-        savePaket
-    );
-
-    $("form-transaksi")?.addEventListener(
-        "submit",
-        saveTransaksi
-    );
-
-    $("form-pembayaran")?.addEventListener(
-        "submit",
-        savePembayaran
-    );
-
-    // Tombol untuk menutup form
-    document.querySelectorAll("[data-close]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const target = $(button.dataset.close);
-
-            if (target) {
-                target.classList.add("hidden");
-            }
-        });
-    });
-
-    // Mengisi harga paket saat paket dipilih
-    $("pilih-paket")?.addEventListener(
-        "change",
-        isiHargaPaket
-    );
-
-    // Fitur pencarian jika elemen pencarian tersedia
-    $("cari-pelanggan")?.addEventListener(
-        "input",
-        renderPelanggan
-    );
-
-    $("cari-paket")?.addEventListener(
-        "input",
-        renderPaket
-    );
-
-    $("cari-transaksi")?.addEventListener(
-        "input",
-        renderTransaksi
-    );
-
-    $("cari-pembayaran")?.addEventListener(
-        "input",
-        renderPembayaran
-    );
-
-    // Tombol refresh laporan jika tersedia
-    $("btnRefreshLaporan")?.addEventListener(
-        "click",
-        async () => {
-            await loadAllData();
-            showToast("Laporan berhasil diperbarui.");
-        }
-    );
 }
 
 /* =========================================
-   INISIALISASI
+   INISIALISASI APLIKASI
    ========================================= */
 
-function initializeApp() {
-    if ($("currentDate")) {
-        $("currentDate").textContent = new Date().toLocaleDateString(
-            "id-ID",
-            {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric"
-            }
-        );
-    }
-
-    if ($("currentYear")) {
-        $("currentYear").textContent = new Date().getFullYear();
-    }
-
+async function initializeApp() {
     setupNavigation();
     setupForms();
     setupTableActions();
 
     showPage("dashboard");
-    loadAllData();
+
+    await loadAllData();
 }
 
 document.addEventListener("DOMContentLoaded", initializeApp);
