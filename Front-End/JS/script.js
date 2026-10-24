@@ -31,13 +31,11 @@ async function supabaseRequest(table, options = {}) {
         Prefer: options.prefer || "return=representation"
     };
 
-    let body;
-
-    if (options.body !== undefined && options.body !== null) {
-        body = typeof options.body === "string"
+    const body = options.body == null
+        ? undefined
+        : typeof options.body === "string"
             ? options.body
             : JSON.stringify(options.body);
-    }
 
     const response = await fetch(
         `${SUPABASE_URL}/rest/v1/${table}?${query}`,
@@ -54,7 +52,7 @@ async function supabaseRequest(table, options = {}) {
     if (text) {
         try {
             result = JSON.parse(text);
-        } catch {
+        } catch (error) {
             throw new Error(
                 `Respons Supabase tidak valid. Status: ${response.status}`
             );
@@ -72,6 +70,8 @@ async function supabaseRequest(table, options = {}) {
 
     return result;
 }
+
+
 
 async function apiRequest(endpoint, options = {}) {
 const routeMap = {
