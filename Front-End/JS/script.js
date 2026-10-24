@@ -6,8 +6,8 @@
    ========================================= */
 
 // PERTAHANKAN konfigurasi Supabase milikmu dari kode lama.
-const SUPABASE_URL = "MASUKKAN_URL_SUPABASE_MILIKMU";
-const SUPABASE_KEY = "MASUKKAN_PUBLISHABLE_KEY_MILIKMU";
+const SUPABASE_URL = "https://kkuwqdluicotbzgdmfjk.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Cs1-1HixNDSvTVVJyfp32Q_o1e94vZn";
 
 /* =========================================
    STATE APLIKASI
