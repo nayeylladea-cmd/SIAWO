@@ -137,7 +137,6 @@ function angka(nilai) {
     return Number.isFinite(hasil) ? hasil : 0;
 }
 
-javascript
 function rupiah(nilai) {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
