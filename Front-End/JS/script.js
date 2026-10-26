@@ -1,16 +1,12 @@
 "use strict";
 
 /* =========================================
-   LUNELLE WEDDING
+   SIAWO - SISTEM AKUNTANSI WEDDING ORGANIZER
    Frontend JavaScript + Supabase
    ========================================= */
 
 const SUPABASE_URL = "https://kkuwqdluicotbzgdmfjk.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Cs1-1HixNDSvTVVJyfp32Q_o1e94vZn";
-
-/* =========================================
-   STATE APLIKASI
-   ========================================= */
 
 const state = {
     pelanggan: [],
@@ -20,10 +16,6 @@ const state = {
 };
 
 let sedangMemuat = false;
-
-/* =========================================
-   FUNGSI DASAR
-   ========================================= */
 
 function angka(nilai) {
     const hasil = Number(nilai);
@@ -102,10 +94,6 @@ function getRows(data) {
     return [];
 }
 
-/* =========================================
-   KONEKSI SUPABASE
-   ========================================= */
-
 async function supabaseRequest(tabel, opsi = {}) {
     if (!SUPABASE_URL || !SUPABASE_KEY) {
         throw new Error("Konfigurasi Supabase belum diisi.");
@@ -137,7 +125,6 @@ async function supabaseRequest(tabel, opsi = {}) {
         headers.Prefer = "return=representation";
     }
 
-    // Menggunakan cache: "no-store" agar browser selalu mengambil data terbaru dari database
     const respons = await fetch(url, {
         method,
         headers,
@@ -164,10 +151,6 @@ async function supabaseRequest(tabel, opsi = {}) {
     return hasil;
 }
 
-/* =========================================
-   PEMBACAAN DATA
-   ========================================= */
-
 async function loadAllData() {
     if (sedangMemuat) return;
     sedangMemuat = true;
@@ -193,10 +176,6 @@ async function loadAllData() {
         sedangMemuat = false;
     }
 }
-
-/* =========================================
-   PENCARIAN RELASI DATA
-   ========================================= */
 
 function getNamaPelanggan(id) {
     const data = state.pelanggan.find(item => String(item.id_pelanggan) === String(id));
@@ -238,10 +217,6 @@ function setIsiTabel(id, html, colspan = 1) {
     if (!tabel) return;
     tabel.innerHTML = html || `<tr><td colspan="${colspan}" style="text-align:center;padding:20px">Belum ada data.</td></tr>`;
 }
-
-/* =========================================
-   RENDER SEMUA BAGIAN
-   ========================================= */
 
 function renderDashboard() {
     const totalPendapatan = state.pembayaran.reduce((total, item) => total + angka(item.jumlah_bayar), 0);
@@ -346,9 +321,7 @@ function renderPembayaran() {
             <td>${actionButtons("pembayaran", item.id_pembayaran)}</td>
         </tr>
     `).join("");
-    
-    // Ubah angka 7 menjadi 6 karena jumlah kolomnya berkurang
-    setIsiTabel("tabel-pembayaran", html, 6); 
+    setIsiTabel("tabel-pembayaran", html, 6);
 }
 
 function renderPiutang() {
@@ -464,10 +437,6 @@ function renderAll() {
     renderPilihanDropdown();
 }
 
-/* =========================================
-   NAVIGASI HALAMAN & FORM
-   ========================================= */
-
 function showPage(namaHalaman) {
     document.querySelectorAll(".page").forEach(halaman => halaman.classList.remove("active"));
     const target = document.getElementById(`${namaHalaman}-page`);
@@ -479,11 +448,10 @@ function showPage(namaHalaman) {
 
     const judul = { dashboard: "Dashboard", pelanggan: "Data Pelanggan", paket: "Paket Wedding", transaksi: "Transaksi Wedding", pembayaran: "Pembayaran", piutang: "Piutang" };
     const elemenJudul = document.getElementById("page-title");
-    if (elemenJudul) elemenJudul.textContent = judul[namaHalaman] || "Lunelle Wedding";
+    if (elemenJudul) elemenJudul.textContent = judul[namaHalaman] || "SIAWO";
 }
 
 function setupNavigation() {
-    // Navigasi menu
     document.querySelectorAll("[data-page]").forEach(tombol => {
         tombol.addEventListener("click", event => {
             event.preventDefault();
@@ -491,7 +459,6 @@ function setupNavigation() {
         });
     });
 
-    // Navigasi dashboard (tombol shortcut) menggunakan Event Delegation agar stabil
     document.addEventListener("click", event => {
         const tombol = event.target.closest("[data-go]");
         if (tombol) {
@@ -529,7 +496,6 @@ function resetForm(formID) {
     const form = document.getElementById(formID);
     if (form) {
         form.reset();
-        // Membersihkan hidden input (ID) agar tidak menimpa data saat menambah baru
         form.querySelectorAll("input[type='hidden']").forEach(input => input.value = "");
     }
 }
@@ -540,10 +506,6 @@ function tampilkanForm(formID, tampil = true) {
     const pembungkus = form.closest(".form-card") || form.closest(".form-container") || form;
     pembungkus.classList.toggle("hidden", !tampil);
 }
-
-/* =========================================
-   SIMPAN DATA
-   ========================================= */
 
 async function savePelanggan(event) {
     event.preventDefault();
@@ -624,10 +586,6 @@ async function savePembayaran(event) {
     }
 }
 
-/* =========================================
-   EDIT & HAPUS DATA
-   ========================================= */
-
 function editPelanggan(id) {
     const item = state.pelanggan.find(data => String(data.id_pelanggan) === String(id));
     if (!item) return;
@@ -694,10 +652,6 @@ async function deleteRecord(jenis, id) {
         tampilkanPesan("Gagal menghapus data: " + error.message, "error");
     }
 }
-
-/* =========================================
-   INISIALISASI APLIKASI & PENCARIAN
-   ========================================= */
 
 function setupSearch() {
     const inputPelanggan = document.getElementById("search-pelanggan");
@@ -766,8 +720,9 @@ async function initializeApp() {
     setupNavigation();
     setupForms();
     setupTableActions();
-    setupSearch(); 
+    setupSearch(); // 👈 Menghubungkan fungsi pencarian
     showPage("dashboard");
     await loadAllData();
 }
+
 document.addEventListener("DOMContentLoaded", initializeApp);
