@@ -763,3 +763,8 @@ td button:hover {
     background: #f4d6e0;
 }
 
+/* Memperkecil ukuran font nominal pada kartu statistik dashboard agar pas dan tidak terpotong */
+.stat-card h3 {
+    font-size: 22px !important;
+    word-break: break-word;
+}
