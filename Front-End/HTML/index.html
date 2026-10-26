@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -11,9 +10,8 @@
 <body>
     <div class="app-container">
         <aside class="sidebar">
-         <div class="brand">
+            <div class="brand">
                 <span class="brand-icon" style="display: flex; align-items: center; justify-content: center;">
-                    <!-- Ikon Dua Cincin -->
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="8.5" cy="12" r="5"></circle>
                         <circle cx="15.5" cy="12" r="5"></circle>
@@ -44,8 +42,8 @@
                     <span>↗</span> Pembayaran
                 </a>
                 <a href="#piutang" class="nav-link" data-page="piutang">
-                <span>Rp</span> Piutang
-            </a>
+                    <span>Rp</span> Piutang
+                </a>
             </nav>
 
             <div class="sidebar-footer">
@@ -54,14 +52,19 @@
             </div>
         </aside>
 
-<main class="main-content">
+        <main class="main-content">
             <header class="topbar">
                 <div>
                     <p class="eyebrow">WEDDING MANAGEMENT</p>
                     <h1 id="page-title">Dashboard</h1>
                 </div>
                 <div class="profile">
-                    <span class="profile-icon">S</span>
+                    <span class="profile-icon" style="display: flex; align-items: center; justify-content: center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </span>
                     <div>
                         <strong>Administrator</strong>
                         <p>SIAWO by Lunelle</p>
@@ -72,87 +75,86 @@
             <section id="dashboard-page" class="page active">
                 <div class="welcome-banner">
                     <div>
-                        <p class="eyebrow">WELCOME TO SIAWO</p>
+                        <p class="eyebrow">WELCOME TO LUNELLE</p>
                         <h2>Manage every moment beautifully.</h2>
                         <p>Kelola pelanggan, paket wedding, transaksi, dan pembayaran dalam satu tempat.</p>
                     </div>
                     <div class="banner-decoration">♡</div>
                 </div>
 
+                <div class="stats-grid">
+                    <article class="stat-card">
+                        <p>Total Pelanggan</p>
+                        <h3 id="total-pelanggan">0</h3>
+                        <span>Data pelanggan terdaftar</span>
+                    </article>
 
-<div class="stats-grid">
-    <article class="stat-card">
-        <p>Total Pelanggan</p>
-        <h3 id="total-pelanggan">0</h3>
-        <span>Data pelanggan terdaftar</span>
-    </article>
+                    <article class="stat-card">
+                        <p>Total Paket</p>
+                        <h3 id="total-paket">0</h3>
+                        <span>Paket wedding tersedia</span>
+                    </article>
 
-    <article class="stat-card">
-        <p>Total Paket</p>
-        <h3 id="total-paket">0</h3>
-        <span>Paket wedding tersedia</span>
-    </article>
+                    <article class="stat-card">
+                        <p>Total Transaksi</p>
+                        <h3 id="total-transaksi">0</h3>
+                        <span>Transaksi tercatat</span>
+                    </article>
 
-    <article class="stat-card">
-        <p>Total Transaksi</p>
-        <h3 id="total-transaksi">0</h3>
-        <span>Transaksi tercatat</span>
-    </article>
+                    <article class="stat-card">
+                        <p>Total Pendapatan</p>
+                        <h3 id="total-pendapatan">Rp0</h3>
+                        <span>Total pembayaran masuk</span>
+                    </article>
 
-    <article class="stat-card">
-        <p>Total Pendapatan</p>
-        <h3 id="total-pendapatan">Rp0</h3>
-        <span>Total pembayaran masuk</span>
-    </article>
+                    <article class="stat-card">
+                        <p>Total Piutang</p>
+                        <h3 id="total-piutang">Rp0</h3>
+                        <span>Sisa tagihan pelanggan</span>
+                    </article>
+                </div>
 
-    <article class="stat-card">
-        <p>Total Piutang</p>
-        <h3 id="total-piutang">Rp0</h3>
-        <span>Sisa tagihan pelanggan</span>
-    </article>
-</div>
+                <!-- DIAGRAM RINGKASAN PIUTANG -->
+                <div class="content-card receivable-chart-card">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Ringkasan Keuangan</h2>
+                            <p>Perbandingan tagihan, pembayaran, dan sisa piutang.</p>
+                        </div>
+                    </div>
 
-<!-- DIAGRAM RINGKASAN PIUTANG -->
-<div class="content-card receivable-chart-card">
-    <div class="section-heading">
-        <div>
-            <h2>Ringkasan Keuangan</h2>
-            <p>Perbandingan tagihan, pembayaran, dan sisa piutang.</p>
-        </div>
-    </div>
+                    <div class="chart-legend">
+                        <span><i class="legend-dot tagihan"></i> Total Tagihan</span>
+                        <span><i class="legend-dot pembayaran"></i> Total Dibayar</span>
+                        <span><i class="legend-dot piutang"></i> Sisa Piutang</span>
+                    </div>
 
-    <div class="chart-legend">
-        <span><i class="legend-dot tagihan"></i> Total Tagihan</span>
-        <span><i class="legend-dot pembayaran"></i> Total Dibayar</span>
-        <span><i class="legend-dot piutang"></i> Sisa Piutang</span>
-    </div>
+                    <div class="receivable-chart">
+                        <div class="chart-row">
+                            <span class="chart-label">Total Tagihan</span>
+                            <div class="chart-track">
+                                <div id="bar-tagihan" class="chart-bar tagihan"></div>
+                            </div>
+                            <span id="nilai-tagihan" class="chart-value">Rp0</span>
+                        </div>
 
-    <div class="receivable-chart">
-        <div class="chart-row">
-            <span class="chart-label">Total Tagihan</span>
-            <div class="chart-track">
-                <div id="bar-tagihan" class="chart-bar tagihan"></div>
-            </div>
-            <span id="nilai-tagihan" class="chart-value">Rp0</span>
-        </div>
+                        <div class="chart-row">
+                            <span class="chart-label">Total Dibayar</span>
+                            <div class="chart-track">
+                                <div id="bar-pembayaran" class="chart-bar pembayaran"></div>
+                            </div>
+                            <span id="nilai-pembayaran" class="chart-value">Rp0</span>
+                        </div>
 
-        <div class="chart-row">
-            <span class="chart-label">Total Dibayar</span>
-            <div class="chart-track">
-                <div id="bar-pembayaran" class="chart-bar pembayaran"></div>
-            </div>
-            <span id="nilai-pembayaran" class="chart-value">Rp0</span>
-        </div>
-
-        <div class="chart-row">
-            <span class="chart-label">Sisa Piutang</span>
-            <div class="chart-track">
-                <div id="bar-piutang" class="chart-bar piutang"></div>
-            </div>
-            <span id="nilai-piutang" class="chart-value">Rp0</span>
-        </div>
-    </div>
-</div>
+                        <div class="chart-row">
+                            <span class="chart-label">Sisa Piutang</span>
+                            <div class="chart-track">
+                                <div id="bar-piutang" class="chart-bar piutang"></div>
+                            </div>
+                            <span id="nilai-piutang" class="chart-value">Rp0</span>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="content-card">
                     <div class="section-heading">
@@ -174,8 +176,8 @@
             </section>
 
             <section id="pelanggan-page" class="page">
-
-                <div class="section-heading">
+                <div class="content-card">
+                    <div class="section-heading">
                         <div>
                             <h2>Data Pelanggan</h2>
                             <p>Kelola informasi pelanggan wedding organizer.</p>
@@ -188,17 +190,6 @@
                     <!-- KOTAK PENCARIAN PELANGGAN -->
                     <div style="margin-bottom: 20px;">
                         <input type="text" id="search-pelanggan" placeholder="🔍 Cari nama pelanggan, telepon, atau email..." style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; background: var(--white);">
-                    </div>
-
-                <div class="content-card">
-                    <div class="section-heading">
-                        <div>
-                            <h2>Data Pelanggan</h2>
-                            <p>Kelola informasi pelanggan wedding organizer.</p>
-                        </div>
-                        <button class="primary-button" id="tambah-pelanggan" type="button">
-                            + Tambah Pelanggan
-                        </button>
                     </div>
 
                     <form id="form-pelanggan" class="data-form hidden">
@@ -239,8 +230,10 @@
                     </div>
                 </div>
             </section>
-<section id="piutang-page" class="page">
-    <div class="section-heading">
+
+            <section id="piutang-page" class="page">
+                <div class="content-card">
+                    <div class="section-heading">
                         <div>
                             <h2>Buku Piutang</h2>
                             <p>Pantau sisa tagihan dan progres pembayaran pelanggan secara real-time.</p>
@@ -251,15 +244,8 @@
                     <div style="margin-bottom: 20px;">
                         <input type="text" id="search-piutang" placeholder="🔍 Cari berdasarkan nama pelanggan..." style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; background: var(--white);">
                     </div>
-                <div class="content-card">
-                    <div class="section-heading">
-                        <div>
-                            <h2>Buku Piutang</h2>
-                            <p>Pantau sisa tagihan dan progres pembayaran pelanggan secara real-time.</p>
-                        </div>
-                    </div>
 
-                  <!-- KARTU HIGHLIGHT PIUTANG -->
+                    <!-- KARTU HIGHLIGHT PIUTANG -->
                     <div class="stats-grid" style="margin-bottom: 25px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
                         <article class="stat-card" style="background: var(--pink-soft); border-color: var(--pink-light);">
                             <p style="color: var(--pink-dark); font-weight: 600;">Total Piutang Aktif</p>
@@ -301,6 +287,7 @@
                     </div>
                 </div>
             </section>
+
             <section id="paket-page" class="page">
                 <div class="content-card">
                     <div class="section-heading">
@@ -332,10 +319,8 @@
                         </div>
                     </form>
 
-                    <!-- Tempat Kartu Paket Muncul -->
                     <div class="paket-grid" id="paket-grid-container"></div>
-                 
-                </div> <!-- PENUTUP CONTENT-CARD YANG SEMPAT HILANG ADA DI SINI -->
+                </div>
             </section>
 
             <section id="transaksi-page" class="page">
@@ -451,26 +436,27 @@
                         </div>
                     </form>
 
-                   <div class="table-wrapper">
-    <table>
-        <thead>
-            <tr>
-                <th>ID Transaksi</th>
-                <th>Tanggal</th>
-                <th>Jumlah</th>
-                <th>Metode</th>
-                <th>Keterangan</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody id="tabel-pembayaran"></tbody>
-    </table>
-</div>
-</section>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID Transaksi</th>
+                                    <th>Tanggal</th>
+                                    <th>Jumlah</th>
+                                    <th>Metode</th>
+                                    <th>Keterangan</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-pembayaran"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
 
-           <footer class="page-footer">
-    <p>© 2026 SIAWO by Lunelle Wedding · Make every moment beautiful ♡</p>
-</footer>
+            <footer class="page-footer">
+                <p>© 2026 SIAWO by Lunelle Wedding · Make every moment beautiful ♡</p>
+            </footer>
         </main>
     </div>
 
