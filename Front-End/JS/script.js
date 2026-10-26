@@ -329,7 +329,6 @@ function renderTransaksi() {
 function renderPembayaran() {
     const html = state.pembayaran.map(item => `
         <tr>
-            <td>${escapeHTML(item.id_pembayaran)}</td>
             <td>${escapeHTML(item.id_transaksi)}</td>
             <td>${tanggalIndonesia(item.tanggal_pembayaran)}</td>
             <td>${rupiah(item.jumlah_bayar)}</td>
@@ -338,7 +337,9 @@ function renderPembayaran() {
             <td>${actionButtons("pembayaran", item.id_pembayaran)}</td>
         </tr>
     `).join("");
-    setIsiTabel("tabel-pembayaran", html, 7);
+    
+    // Ubah angka 7 menjadi 6 karena jumlah kolomnya berkurang
+    setIsiTabel("tabel-pembayaran", html, 6); 
 }
 
 function renderPiutang() {
