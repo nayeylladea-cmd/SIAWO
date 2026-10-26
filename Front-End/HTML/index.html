@@ -228,17 +228,24 @@
                         </div>
                     </div>
 
-                    <!-- KARTU HIGHLIGHT PIUTANG -->
-                    <div class="stats-grid" style="margin-bottom: 25px; grid-template-columns: repeat(2, minmax(0, 1fr));">
+                  <!-- KARTU HIGHLIGHT PIUTANG -->
+                    <div class="stats-grid" style="margin-bottom: 25px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
                         <article class="stat-card" style="background: var(--pink-soft); border-color: var(--pink-light);">
                             <p style="color: var(--pink-dark); font-weight: 600;">Total Piutang Aktif</p>
                             <h3 id="summary-total-piutang" style="color: #b85e7b; font-size: 28px;">Rp0</h3>
                             <span style="color: #d9829b;">Uang yang belum diterima</span>
                         </article>
+                        
                         <article class="stat-card">
                             <p>Menunggu Pelunasan</p>
                             <h3 id="summary-orang-piutang">0</h3>
                             <span>Transaksi belum lunas</span>
+                        </article>
+
+                        <article class="stat-card" style="border-left: 4px solid #2ca068;">
+                            <p>Rasio Penagihan (Collection Ratio)</p>
+                            <h3 id="summary-rasio-piutang" style="color: #2ca068;">0%</h3>
+                            <span>Tingkat keberhasilan penagihan</span>
                         </article>
                     </div>
 
