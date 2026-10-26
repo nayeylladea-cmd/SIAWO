@@ -726,3 +726,38 @@ async function initializeApp() {
 }
 
 document.addEventListener("DOMContentLoaded", initializeApp);
+
+
+/* =========================================
+   FITUR CETAK (PRINT)
+   ========================================= */
+@media print {
+    /* Sembunyikan sidebar, tombol, dan kotak pencarian */
+    .sidebar, .topbar, button, input, footer {
+        display: none !important;
+    }
+
+    /* Hilangkan margin agar tabel memenuhi kertas */
+    .app-container, .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    /* Pastikan hanya halaman yang sedang dibuka yang dicetak */
+    .page:not(.active) {
+        display: none !important;
+    }
+
+    /* Sesuaikan warna dan garis tabel untuk printer */
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .content-card, .stat-card {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid;
+    }
+}
