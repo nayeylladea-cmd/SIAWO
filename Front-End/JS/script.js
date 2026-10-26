@@ -517,25 +517,59 @@ function renderPembayaran() {
    ========================================= */
 
 function renderPiutang() {
+    let totalSeluruhPiutang = 0;
+    let transaksiBerhutang = 0;
+
     const html = state.transaksi.map(item => {
+        const totalTagihan = angka(item.total_transaksi);
         const totalBayar = getTotalPembayaran(item.id_transaksi);
-        const sisa = getPiutang(item);
+        const sisa = Math.max(totalTagihan - totalBayar, 0);
+
+        // Hitung akumulasi untuk highlight cards
+        if (sisa > 0) {
+            totalSeluruhPiutang += sisa;
+            transaksiBerhutang++;
+        }
+
+        // Kalkulasi persentase bar
+        const persen = totalTagihan > 0 ? Math.min((totalBayar / totalTagihan) * 100, 100) : 0;
+        
+        // Warna penegas untuk utang
+        const warnaSisa = sisa > 0 ? '#d84a5f' : '#2ca068'; 
 
         return `
             <tr>
-                <td>${escapeHTML(item.id_transaksi)}</td>
-                <td>${escapeHTML(getNamaPelanggan(item.id_pelanggan))}</td>
-                <td>${rupiah(item.total_transaksi)}</td>
-                <td>${rupiah(totalBayar)}</td>
-                <td>${rupiah(sisa)}</td>
+                <td><strong>#${escapeHTML(item.id_transaksi)}</strong></td>
+                <td><strong>${escapeHTML(getNamaPelanggan(item.id_pelanggan))}</strong></td>
+                <td>${rupiah(totalTagihan)}</td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                        <div style="flex:1; height:6px; background:#f0e3e7; border-radius:10px; overflow:hidden;">
+                            <div style="width:${persen}%; height:100%; background:var(--pink); border-radius:10px;"></div>
+                        </div>
+                        <span style="font-size:10px; font-weight:bold; color:var(--pink-dark);">${Math.round(persen)}%</span>
+                    </div>
+                    <div style="font-size:10px; color:var(--muted);">Terbayar: ${rupiah(totalBayar)}</div>
+                </td>
+                <td>
+                    <strong style="color: ${warnaSisa}; font-size: 14px;">
+                        ${rupiah(sisa)}
+                    </strong>
+                </td>
                 <td>${badgeStatus(sisa <= 0 ? "Lunas" : "Belum Lunas")}</td>
             </tr>
         `;
     }).join("");
 
     setIsiTabel("tabel-piutang", html, 6);
-}
 
+    // Update Kartu Highlight di bagian atas
+    const totalElem = document.getElementById("summary-total-piutang");
+    if (totalElem) totalElem.textContent = rupiah(totalSeluruhPiutang);
+
+    const orangElem = document.getElementById("summary-orang-piutang");
+    if (orangElem) orangElem.textContent = `${transaksiBerhutang} Transaksi`;
+}
 /* =========================================
    DROPDOWN RELASI
    ========================================= */
