@@ -220,34 +220,49 @@
                 </div>
             </section>
 <section id="piutang-page" class="page">
-    <div class="content-card">
-        <div class="section-heading">
-            <div>
-                <h2>Daftar Piutang</h2>
-                <p>Pantau sisa tagihan setiap pelanggan.</p>
-            </div>
-        </div>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID Transaksi</th>
-                        <th>Nama Pelanggan</th>
-                        <th>Paket Wedding</th>
-                        <th>Total Tagihan</th>
-                        <th>Total Dibayar</th>
-                        <th>Sisa Piutang</th>
-                    </tr>
-                </thead>
-                <tbody id="tabel-piutang">
-                    <tr>
-                        <td colspan="6">Memuat data piutang...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</section>
+                <div class="content-card">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Buku Piutang</h2>
+                            <p>Pantau sisa tagihan dan progres pembayaran pelanggan secara real-time.</p>
+                        </div>
+                    </div>
+
+                    <!-- KARTU HIGHLIGHT PIUTANG -->
+                    <div class="stats-grid" style="margin-bottom: 25px; grid-template-columns: repeat(2, minmax(0, 1fr));">
+                        <article class="stat-card" style="background: var(--pink-soft); border-color: var(--pink-light);">
+                            <p style="color: var(--pink-dark); font-weight: 600;">Total Piutang Aktif</p>
+                            <h3 id="summary-total-piutang" style="color: #b85e7b; font-size: 28px;">Rp0</h3>
+                            <span style="color: #d9829b;">Uang yang belum diterima</span>
+                        </article>
+                        <article class="stat-card">
+                            <p>Menunggu Pelunasan</p>
+                            <h3 id="summary-orang-piutang">0</h3>
+                            <span>Transaksi belum lunas</span>
+                        </article>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nama Pelanggan</th>
+                                    <th>Total Tagihan</th>
+                                    <th style="min-width: 150px;">Progres Pembayaran</th>
+                                    <th>Sisa Piutang</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-piutang">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; padding: 20px;">Memuat data piutang...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
             <section id="paket-page" class="page">
                 <div class="content-card">
                     <div class="section-heading">
