@@ -280,7 +280,15 @@ function renderDashboard() {
 }
 
 function renderPelanggan() {
-    const html = state.pelanggan.map(item => `
+    const keyword = document.getElementById("search-pelanggan")?.value.toLowerCase() || "";
+    
+    const filteredData = state.pelanggan.filter(item => 
+        (item.nama_pelanggan || "").toLowerCase().includes(keyword) ||
+        (item.no_telepon || "").toLowerCase().includes(keyword) ||
+        (item.email || "").toLowerCase().includes(keyword)
+    );
+
+    const html = filteredData.map(item => `
         <tr>
             <td>${escapeHTML(item.nama_pelanggan)}</td>
             <td>${escapeHTML(item.no_telepon)}</td>
@@ -289,6 +297,7 @@ function renderPelanggan() {
             <td>${actionButtons("pelanggan", item.id_pelanggan)}</td>
         </tr>
     `).join("");
+
     setIsiTabel("tabel-pelanggan", html, 5);
 }
 
@@ -346,16 +355,22 @@ function renderPiutang() {
     let totalSeluruhPiutang = 0;
     let transaksiBerhutang = 0;
     
-    // Variabel untuk menghitung Rasio Penagihan
     let akumulasiTotalTagihan = 0;
     let akumulasiTotalDibayar = 0;
 
-    const html = state.transaksi.map(item => {
+    const keyword = document.getElementById("search-piutang")?.value.toLowerCase() || "";
+
+    const filteredData = state.transaksi.filter(item => {
+        const namaPelanggan = getNamaPelanggan(item.id_pelanggan).toLowerCase();
+        const idTransaksi = String(item.id_transaksi).toLowerCase();
+        return namaPelanggan.includes(keyword) || idTransaksi.includes(keyword);
+    });
+
+    const html = filteredData.map(item => {
         const totalTagihan = angka(item.total_transaksi);
         const totalBayar = getTotalPembayaran(item.id_transaksi);
         const sisa = Math.max(totalTagihan - totalBayar, 0);
 
-        // Tambah ke akumulator
         akumulasiTotalTagihan += totalTagihan;
         akumulasiTotalDibayar += totalBayar;
 
@@ -367,19 +382,12 @@ function renderPiutang() {
         const persen = totalTagihan > 0 ? Math.min((totalBayar / totalTagihan) * 100, 100) : 0;
         const warnaSisa = sisa > 0 ? '#d84a5f' : '#2ca068'; 
 
-        // ==========================================
-        // FITUR TOMBOL TAGIHAN WHATSAPP (SIAWO)
-        // ==========================================
         const dataPelanggan = state.pelanggan.find(p => String(p.id_pelanggan) === String(item.id_pelanggan));
         
         let tombolWA = "";
         if (sisa > 0 && dataPelanggan && dataPelanggan.no_telepon) {
-            // Ubah format nomor (misal 0812... jadi 62812...)
             const noWA = dataPelanggan.no_telepon.replace(/[^0-9]/g, '').replace(/^0/, '62');
-            
-            // Pesan template akuntansi
             const teksPesan = encodeURIComponent(`Halo ${dataPelanggan.nama_pelanggan},\n\nKami dari *SIAWO - Lunelle Wedding* ingin menginformasikan ringkasan tagihan acara Anda.\n\nTotal Tagihan: ${rupiah(totalTagihan)}\nTotal Dibayar: ${rupiah(totalBayar)}\n*Sisa Piutang: ${rupiah(sisa)}*\n\nMohon untuk dapat melakukan pelunasan sisa tagihan tersebut. Terima kasih atas kepercayaannya! ♡`);
-            
             tombolWA = `<a href="https://wa.me/${noWA}?text=${teksPesan}" target="_blank" style="display:inline-block; margin-top:8px; padding:6px 12px; background:#25D366; color:white; border-radius:6px; font-size:11px; font-weight:bold; text-decoration:none; box-shadow: 0 2px 5px rgba(37,211,102,0.3);">💬 Tagih via WA</a>`;
         } else if (sisa > 0) {
             tombolWA = `<span style="display:inline-block; margin-top:8px; font-size:10px; color:var(--muted);">No. HP tidak valid</span>`;
@@ -411,14 +419,12 @@ function renderPiutang() {
 
     setIsiTabel("tabel-piutang", html, 6);
 
-    // Update Kartu Highlight di bagian atas
     const totalElem = document.getElementById("summary-total-piutang");
     if (totalElem) totalElem.textContent = rupiah(totalSeluruhPiutang);
 
     const orangElem = document.getElementById("summary-orang-piutang");
     if (orangElem) orangElem.textContent = `${transaksiBerhutang} Transaksi`;
 
-    // Kalkulasi & Update Rasio Penagihan
     const rasioElem = document.getElementById("summary-rasio-piutang");
     if (rasioElem) {
         const persentaseKolektibilitas = akumulasiTotalTagihan > 0 ? Math.round((akumulasiTotalDibayar / akumulasiTotalTagihan) * 100) : 0;
@@ -690,8 +696,20 @@ async function deleteRecord(jenis, id) {
 }
 
 /* =========================================
-   INISIALISASI APLIKASI
+   INISIALISASI APLIKASI & PENCARIAN
    ========================================= */
+
+function setupSearch() {
+    const inputPelanggan = document.getElementById("search-pelanggan");
+    if (inputPelanggan) {
+        inputPelanggan.addEventListener("input", renderPelanggan);
+    }
+
+    const inputPiutang = document.getElementById("search-piutang");
+    if (inputPiutang) {
+        inputPiutang.addEventListener("input", renderPiutang);
+    }
+}
 
 function setupForms() {
     const konfigurasiForm = [
@@ -748,8 +766,8 @@ async function initializeApp() {
     setupNavigation();
     setupForms();
     setupTableActions();
+    setupSearch(); 
     showPage("dashboard");
     await loadAllData();
 }
-
 document.addEventListener("DOMContentLoaded", initializeApp);
