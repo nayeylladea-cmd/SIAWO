@@ -402,3 +402,336 @@ function renderPiutang() {
     setIsiTabel("tabel-piutang", html, 6);
 
     const totalElem = document.getElementById("summary-total-piutang");
+    if (totalElem) totalElem.textContent = rupiah(totalSeluruhPiutang);
+
+    const orangElem = document.getElementById("summary-orang-piutang");
+    if (orangElem) orangElem.textContent = `${transaksiBerhutang} Transaksi`;
+
+    const rasioElem = document.getElementById("summary-rasio-piutang");
+    if (rasioElem) {
+        const persentaseKolektibilitas = akumulasiTotalTagihan > 0 ? Math.round((akumulasiTotalDibayar / akumulasiTotalTagihan) * 100) : 0;
+        rasioElem.textContent = `${persentaseKolektibilitas}%`;
+    }
+}
+
+function isiDropdown(id, data, kolomID, pembuatLabel) {
+    const elemen = document.getElementById(id);
+    if (!elemen) return;
+    const nilaiLama = elemen.value;
+    elemen.innerHTML = `<option value="">Pilih data</option>` + data.map(item => `<option value="${escapeHTML(item[kolomID])}">${escapeHTML(pembuatLabel(item))}</option>`).join("");
+    if (nilaiLama) elemen.value = nilaiLama;
+}
+
+function renderPilihanDropdown() {
+    isiDropdown("pilih-pelanggan", state.pelanggan, "id_pelanggan", item => item.nama_pelanggan);
+    isiDropdown("pilih-paket", state.paket, "id_paket", item => `${item.nama_paket} - ${rupiah(item.harga)}`);
+    isiDropdown("pilih-transaksi", state.transaksi, "id_transaksi", item => `${item.id_transaksi} - ${getNamaPelanggan(item.id_pelanggan)}`);
+}
+
+function isiHargaPaket() {
+    const pilihPaket = document.getElementById("pilih-paket");
+    const totalInput = document.getElementById("total-transaksi-input");
+    if (!pilihPaket || !totalInput) return;
+    const paket = state.paket.find(item => String(item.id_paket) === String(pilihPaket.value));
+    if (paket) totalInput.value = angka(paket.harga);
+}
+
+function renderAll() {
+    renderDashboard();
+    renderPelanggan();
+    renderPaket();
+    renderTransaksi();
+    renderPembayaran();
+    renderPiutang();
+    renderPilihanDropdown();
+}
+
+function showPage(namaHalaman) {
+    document.querySelectorAll(".page").forEach(halaman => halaman.classList.remove("active"));
+    const target = document.getElementById(`${namaHalaman}-page`);
+    if (target) target.classList.add("active");
+
+    document.querySelectorAll("[data-page]").forEach(tombol => {
+        tombol.classList.toggle("active", tombol.dataset.page === namaHalaman);
+    });
+
+    const judul = { dashboard: "Dashboard", pelanggan: "Data Pelanggan", paket: "Paket Wedding", transaksi: "Transaksi Wedding", pembayaran: "Pembayaran", piutang: "Piutang" };
+    const elemenJudul = document.getElementById("page-title");
+    if (elemenJudul) elemenJudul.textContent = judul[namaHalaman] || "SIAWO";
+}
+
+function setupNavigation() {
+    document.querySelectorAll("[data-page]").forEach(tombol => {
+        tombol.addEventListener("click", event => {
+            event.preventDefault();
+            showPage(tombol.dataset.page);
+        });
+    });
+
+    document.addEventListener("click", event => {
+        const tombol = event.target.closest("[data-go]");
+        if (tombol) {
+            event.preventDefault();
+            const targetPage = tombol.dataset.go;
+            showPage(targetPage);
+            if (targetPage === "pelanggan") {
+                resetForm("form-pelanggan");
+                tampilkanForm("form-pelanggan", true);
+            }
+        }
+    });
+}
+
+function nilaiForm(form, nama) {
+    const elemen = form.elements.namedItem(nama);
+    return elemen ? elemen.value.trim() : "";
+}
+
+function ambilID(form, nama) {
+    const elemen = form.elements.namedItem(nama);
+    return elemen ? elemen.value.trim() : "";
+}
+
+function dataForm(form, namaKolom) {
+    const data = {};
+    namaKolom.forEach(nama => {
+        const nilai = nilaiForm(form, nama);
+        if (nilai !== "") data[nama] = nilai;
+    });
+    return data;
+}
+
+function resetForm(formID) {
+    const form = document.getElementById(formID);
+    if (form) {
+        form.reset();
+        form.querySelectorAll("input[type='hidden']").forEach(input => input.value = "");
+    }
+}
+
+function tampilkanForm(formID, tampil = true) {
+    const form = document.getElementById(formID);
+    if (!form) return;
+    const pembungkus = form.closest(".form-card") || form.closest(".form-container") || form;
+    pembungkus.classList.toggle("hidden", !tampil);
+}
+
+async function savePelanggan(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const id = ambilID(form, "id_pelanggan");
+    const payload = dataForm(form, ["nama_pelanggan", "no_telepon", "email", "alamat"]);
+
+    try {
+        if (id) await supabaseRequest("pelanggan", { method: "PATCH", filters: { id_pelanggan: `eq.${id}` }, body: payload });
+        else await supabaseRequest("pelanggan", { method: "POST", body: payload });
+
+        resetForm("form-pelanggan");
+        tampilkanForm("form-pelanggan", false);
+        await loadAllData();
+        tampilkanPesan("Data pelanggan berhasil disimpan.");
+    } catch (error) {
+        tampilkanPesan("Gagal menyimpan pelanggan: " + error.message, "error");
+    }
+}
+
+async function savePaket(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const id = ambilID(form, "id_paket");
+    const payload = dataForm(form, ["nama_paket", "harga", "deskripsi"]);
+    if (payload.harga !== undefined) payload.harga = angka(payload.harga);
+
+    try {
+        if (id) await supabaseRequest("paket_wedding", { method: "PATCH", filters: { id_paket: `eq.${id}` }, body: payload });
+        else await supabaseRequest("paket_wedding", { method: "POST", body: payload });
+
+        resetForm("form-paket");
+        tampilkanForm("form-paket", false);
+        await loadAllData();
+        tampilkanPesan("Data paket berhasil disimpan.");
+    } catch (error) {
+        tampilkanPesan("Gagal menyimpan paket: " + error.message, "error");
+    }
+}
+
+async function saveTransaksi(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const id = ambilID(form, "id_transaksi");
+    const payload = dataForm(form, ["id_pelanggan", "id_paket", "tanggal_transaksi", "tanggal_acara", "total_transaksi", "status"]);
+    if (payload.total_transaksi !== undefined) payload.total_transaksi = angka(payload.total_transaksi);
+
+    try {
+        if (id) await supabaseRequest("transaksi_wedding", { method: "PATCH", filters: { id_transaksi: `eq.${id}` }, body: payload });
+        else await supabaseRequest("transaksi_wedding", { method: "POST", body: payload });
+
+        resetForm("form-transaksi");
+        tampilkanForm("form-transaksi", false);
+        await loadAllData();
+        tampilkanPesan("Transaksi berhasil disimpan.");
+    } catch (error) {
+        tampilkanPesan("Gagal menyimpan transaksi: " + error.message, "error");
+    }
+}
+
+async function savePembayaran(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const id = ambilID(form, "id_pembayaran");
+    const payload = dataForm(form, ["id_transaksi", "tanggal_pembayaran", "jumlah_bayar", "metode_pembayaran", "keterangan"]);
+    if (payload.jumlah_bayar !== undefined) payload.jumlah_bayar = angka(payload.jumlah_bayar);
+
+    try {
+        if (id) await supabaseRequest("pembayaran", { method: "PATCH", filters: { id_pembayaran: `eq.${id}` }, body: payload });
+        else await supabaseRequest("pembayaran", { method: "POST", body: payload });
+
+        resetForm("form-pembayaran");
+        tampilkanForm("form-pembayaran", false);
+        await loadAllData();
+        tampilkanPesan("Pembayaran berhasil disimpan.");
+    } catch (error) {
+        tampilkanPesan("Gagal menyimpan pembayaran: " + error.message, "error");
+    }
+}
+
+function editPelanggan(id) {
+    const item = state.pelanggan.find(data => String(data.id_pelanggan) === String(id));
+    if (!item) return;
+    const form = document.getElementById("form-pelanggan");
+    Object.entries(item).forEach(([nama, nilai]) => {
+        const input = form.elements.namedItem(nama);
+        if (input) input.value = nilai ?? "";
+    });
+    tampilkanForm("form-pelanggan", true);
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function editPaket(id) {
+    const item = state.paket.find(data => String(data.id_paket) === String(id));
+    if (!item) return;
+    const form = document.getElementById("form-paket");
+    Object.entries(item).forEach(([nama, nilai]) => {
+        const input = form.elements.namedItem(nama);
+        if (input) input.value = nilai ?? "";
+    });
+    tampilkanForm("form-paket", true);
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function editTransaksi(id) {
+    const item = state.transaksi.find(data => String(data.id_transaksi) === String(id));
+    if (!item) return;
+    const form = document.getElementById("form-transaksi");
+    Object.entries(item).forEach(([nama, nilai]) => {
+        const input = form.elements.namedItem(nama);
+        if (input) input.value = nilai ?? "";
+    });
+    tampilkanForm("form-transaksi", true);
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function editPembayaran(id) {
+    const item = state.pembayaran.find(data => String(data.id_pembayaran) === String(id));
+    if (!item) return;
+    const form = document.getElementById("form-pembayaran");
+    Object.entries(item).forEach(([nama, nilai]) => {
+        const input = form.elements.namedItem(nama);
+        if (input) input.value = nilai ?? "";
+    });
+    tampilkanForm("form-pembayaran", true);
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+async function deleteRecord(jenis, id) {
+    const konfigurasi = {
+        pelanggan: { tabel: "pelanggan", kolom: "id_pelanggan" },
+        paket: { tabel: "paket_wedding", kolom: "id_paket" },
+        transaksi: { tabel: "transaksi_wedding", kolom: "id_transaksi" },
+        pembayaran: { tabel: "pembayaran", kolom: "id_pembayaran" }
+    };
+    const item = konfigurasi[jenis];
+    if (!item || !confirm("Yakin ingin menghapus data ini?")) return;
+
+    try {
+        await supabaseRequest(item.tabel, { method: "DELETE", filters: { [item.kolom]: `eq.${id}` } });
+        await loadAllData();
+        tampilkanPesan("Data berhasil dihapus.");
+    } catch (error) {
+        tampilkanPesan("Gagal menghapus data: " + error.message, "error");
+    }
+}
+
+function setupSearch() {
+    const inputPelanggan = document.getElementById("search-pelanggan");
+    if (inputPelanggan) {
+        inputPelanggan.addEventListener("input", renderPelanggan);
+    }
+
+    const inputPiutang = document.getElementById("search-piutang");
+    if (inputPiutang) {
+        inputPiutang.addEventListener("input", renderPiutang);
+    }
+}
+
+function setupForms() {
+    const konfigurasiForm = [
+        ["form-pelanggan", savePelanggan],
+        ["form-paket", savePaket],
+        ["form-transaksi", saveTransaksi],
+        ["form-pembayaran", savePembayaran]
+    ];
+    konfigurasiForm.forEach(([id, handler]) => {
+        const form = document.getElementById(id);
+        if (form) form.addEventListener("submit", handler);
+    });
+
+    ["pelanggan", "paket", "transaksi", "pembayaran"].forEach(jenis => {
+        const tombol = document.getElementById(`tambah-${jenis}`);
+        if (tombol) {
+            tombol.addEventListener("click", () => {
+                resetForm(`form-${jenis}`);
+                tampilkanForm(`form-${jenis}`, true);
+            });
+        }
+    });
+
+    document.querySelectorAll("[data-cancel], [data-close]").forEach(tombol => {
+        tombol.addEventListener("click", () => {
+            const form = tombol.closest("form");
+            if (form) {
+                resetForm(form.id);
+                tampilkanForm(form.id, false);
+            }
+        });
+    });
+
+    const pilihPaket = document.getElementById("pilih-paket");
+    if (pilihPaket) pilihPaket.addEventListener("change", isiHargaPaket);
+}
+
+function setupTableActions() {
+    document.addEventListener("click", event => {
+        const tombolEdit = event.target.closest("[data-edit]");
+        const tombolHapus = event.target.closest("[data-delete]");
+
+        if (tombolEdit) {
+            const jenis = tombolEdit.dataset.edit;
+            const id = tombolEdit.dataset.id;
+            const fungsiEdit = { pelanggan: editPelanggan, paket: editPaket, transaksi: editTransaksi, pembayaran: editPembayaran };
+            if (fungsiEdit[jenis]) fungsiEdit[jenis](id);
+        }
+        if (tombolHapus) deleteRecord(tombolHapus.dataset.delete, tombolHapus.dataset.id);
+    });
+}
+
+async function initializeApp() {
+    setupNavigation();
+    setupForms();
+    setupTableActions();
+    setupSearch(); 
+    showPage("dashboard");
+    await loadAllData();
+}
+
+document.addEventListener("DOMContentLoaded", initializeApp);
