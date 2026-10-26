@@ -453,18 +453,23 @@ function renderPelanggan() {
 /* =========================================
    DATA PAKET WEDDING
    ========================================= */
-
 function renderPaket() {
     const html = state.paket.map(item => `
-        <tr>
-            <td>${escapeHTML(item.nama_paket)}</td>
-            <td>${rupiah(item.harga)}</td>
-            <td>${escapeHTML(item.deskripsi)}</td>
-            <td>${actionButtons("paket", item.id_paket)}</td>
-        </tr>
+        <div class="paket-card">
+            <h3>${escapeHTML(item.nama_paket)}</h3>
+            <div class="harga">${rupiah(item.harga)}</div>
+            <p>${escapeHTML(item.deskripsi)}</p>
+            <div class="paket-card-actions">
+                <button type="button" data-edit="paket" data-id="${item.id_paket}">Edit</button>
+                <button type="button" data-delete="paket" data-id="${item.id_paket}">Hapus</button>
+            </div>
+        </div>
     `).join("");
 
-    setIsiTabel("tabel-paket", html, 4);
+    const container = document.getElementById("paket-grid-container");
+    if (container) {
+        container.innerHTML = html || `<p style="text-align:center; width:100%; color:#96868c;">Belum ada paket.</p>`;
+    }
 }
 
 /* =========================================
