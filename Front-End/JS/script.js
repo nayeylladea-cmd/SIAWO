@@ -659,6 +659,20 @@ function setupNavigation() {
             showPage(tombol.dataset.page);
         });
     });
+
+    document.querySelectorAll("[data-go]").forEach(tombol => {
+        tombol.addEventListener("click", event => {
+            event.preventDefault();
+            const targetPage = tombol.dataset.go;
+            
+            showPage(targetPage);
+            
+            if (targetPage === "pelanggan") {
+                resetForm("form-pelanggan");
+                tampilkanForm("form-pelanggan", true);
+            }
+        });
+    });
 }
 
 /* =========================================
