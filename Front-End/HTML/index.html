@@ -233,11 +233,20 @@
 
             <section id="piutang-page" class="page">
                 <div class="content-card">
-                    <div class="section-heading">
+                   <div class="section-heading">
                         <div>
                             <h2>Buku Piutang</h2>
                             <p>Pantau sisa tagihan dan progres pembayaran pelanggan secara real-time.</p>
                         </div>
+                        <button class="secondary-button" onclick="window.print()" type="button" style="display: flex; align-items: center; gap: 8px;">
+                            <!-- Ikon Printer -->
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                <rect x="6" y="14" width="12" height="8"></rect>
+                            </svg>
+                            Cetak Laporan
+                        </button>
                     </div>
 
                     <!-- KOTAK PENCARIAN PIUTANG -->
