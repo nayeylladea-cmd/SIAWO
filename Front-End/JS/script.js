@@ -735,3 +735,22 @@ async function initializeApp() {
 }
 
 document.addEventListener("DOMContentLoaded", initializeApp);
+
+/* =========================================
+   FITUR LOGOUT
+========================================= */
+const btnLogout = document.getElementById('btn-logout');
+
+if (btnLogout) {
+    btnLogout.addEventListener('click', function(e) {
+        e.preventDefault(); // Mencegah efek klik bawaan browser
+        
+        // Munculkan pop-up konfirmasi
+        const konfirmasi = confirm("Apakah Anda yakin ingin keluar dari sistem SIAWO?");
+        
+        if (konfirmasi) {
+            // Jika user memilih 'OK', arahkan kembali ke halaman login
+            window.location.href = 'login.html';
+        }
+    });
+}
