@@ -320,17 +320,28 @@ function renderTransaksi() {
 }
 
 function renderPembayaran() {
-    const html = state.pembayaran.map(item => `
-        <tr>
-            <td>${escapeHTML(item.id_transaksi)}</td>
-            <td>${tanggalIndonesia(item.tanggal_pembayaran)}</td>
-            <td>${rupiah(item.jumlah_bayar)}</td>
-            <td>${escapeHTML(item.metode_pembayaran)}</td>
-            <td>${escapeHTML(item.keterangan)}</td>
-            <td>${actionButtons("pembayaran", item.id_pembayaran)}</td>
-        </tr>
-    `).join("");
-    setIsiTabel("tabel-pembayaran", html, 6);
+    const html = state.pembayaran.map(item => {
+        // 1. Cari data transaksi berdasarkan id_transaksi yang dibayar
+        const transaksi = state.transaksi.find(t => String(t.id_transaksi) === String(item.id_transaksi));
+        
+        // 2. Ambil nama pelanggan dari transaksi tersebut
+        const namaPelanggan = transaksi ? getNamaPelanggan(transaksi.id_pelanggan) : "-";
+
+        return `
+            <tr>
+                <td>${escapeHTML(item.id_transaksi)}</td>
+                <td><strong>${escapeHTML(namaPelanggan)}</strong></td> <!-- Ini baris Nama Pelanggan -->
+                <td>${tanggalIndonesia(item.tanggal_pembayaran)}</td>
+                <td>${rupiah(item.jumlah_bayar)}</td>
+                <td>${escapeHTML(item.metode_pembayaran)}</td>
+                <td>${escapeHTML(item.keterangan)}</td>
+                <td>${actionButtons("pembayaran", item.id_pembayaran)}</td>
+            </tr>
+        `;
+    }).join("");
+    
+    // Ubah angka 6 menjadi 7 karena sekarang totalnya ada 7 kolom
+    setIsiTabel("tabel-pembayaran", html, 7); 
 }
 
 function renderPiutang() {
