@@ -454,6 +454,7 @@ function renderAll() {
     renderTransaksi();
     renderPembayaran();
     renderPiutang();
+    renderLaporan(); // Pastikan baris ini ada
     renderPilihanDropdown();
 }
 
@@ -466,10 +467,19 @@ function showPage(namaHalaman) {
         tombol.classList.toggle("active", tombol.dataset.page === namaHalaman);
     });
 
-    const judul = { dashboard: "Dashboard", pelanggan: "Data Pelanggan", paket: "Paket Wedding", transaksi: "Transaksi Wedding", pembayaran: "Pembayaran", piutang: "Piutang" };
+    const judul = { 
+        dashboard: "Dashboard", 
+        pelanggan: "Data Pelanggan", 
+        paket: "Paket Wedding", 
+        transaksi: "Transaksi Wedding", 
+        pembayaran: "Pembayaran", 
+        piutang: "Piutang",
+        laporan: "Laporan Keuangan" 
+    };
     const elemenJudul = document.getElementById("page-title");
     if (elemenJudul) elemenJudul.textContent = judul[namaHalaman] || "SIAWO";
 }
+
 
 function setupNavigation() {
     document.querySelectorAll("[data-page]").forEach(tombol => {
@@ -764,4 +774,30 @@ if (btnLogout) {
             window.location.href = 'login.html';
         }
     });
+}
+
+function renderLaporan() {
+    const totalKas = state.pembayaran.reduce((sum, item) => sum + angka(item.jumlah_bayar), 0);
+    const totalKontrak = state.transaksi.reduce((sum, item) => sum + angka(item.total_transaksi), 0);
+    const totalPiutang = state.transaksi.reduce((sum, item) => sum + getPiutang(item), 0);
+
+    const elKas = document.getElementById("laporan-kas-masuk");
+    const elKontrak = document.getElementById("laporan-total-kontrak");
+    const elPiutang = document.getElementById("laporan-total-piutang");
+
+    if (elKas) elKas.textContent = rupiah(totalKas);
+    if (elKontrak) elKontrak.textContent = rupiah(totalKontrak);
+    if (elPiutang) elPiutang.textContent = rupiah(totalPiutang);
+
+    const html = state.pembayaran.map(item => `
+        <tr>
+            <td><strong>#${escapeHTML(item.id_transaksi)}</strong></td>
+            <td>${tanggalIndonesia(item.tanggal_pembayaran)}</td>
+            <td><strong style="color: #198754;">${rupiah(item.jumlah_bayar)}</strong></td>
+            <td>${escapeHTML(item.metode_pembayaran)}</td>
+            <td>${escapeHTML(item.keterangan)}</td>
+        </tr>
+    `).join("");
+
+    setIsiTabel("tabel-laporan-kas", html, 5);
 }
