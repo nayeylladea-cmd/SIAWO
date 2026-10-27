@@ -825,3 +825,22 @@ button:hover, input[type="submit"]:hover, .btn:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 4px 12px rgba(122, 59, 76, 0.2) !important;
 }
+
+/* =========================================
+   STYLING IKON SIDEBAR (FONT AWESOME)
+========================================= */
+.navigation a i {
+    width: 24px;         /* Menyamakan lebar agar semua teks sejajar rapi */
+    font-size: 16px;     /* Ukuran ikon */
+    margin-right: 12px;  /* Jarak antara ikon dengan teks menu */
+    color: #8B7A7E;      /* Warna abu-abu kecoklatan saat tidak aktif */
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+/* Efek saat menu disorot kursor atau sedang halaman aktif */
+.navigation a:hover i,
+.navigation a.active i {
+    color: var(--burgundy); /* Berubah menjadi warna tema Burgundy Lunelle */
+    transform: scale(1.15); /* Efek membesar sedikit agar terasa premium */
+}
