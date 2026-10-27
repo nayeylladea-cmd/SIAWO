@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SIAWO Lunelle Wedding</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --burgundy: #7A3B4C;
+            --krem-bg: #FCFAF8;
+            --pink-soft: #F9EAEF;
+            --text-utama: #2D1E22;
+            --border-halus: rgba(122, 59, 76, 0.15);
+        }
+
+        body {
+            background-color: var(--krem-bg);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(122, 59, 76, 0.08);
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            border: 1px solid var(--border-halus);
+        }
+
+        .login-card h2 {
+            font-family: 'Playfair Display', serif;
+            color: var(--burgundy);
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+
+        .login-card p {
+            color: #8B7A7E;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-utama);
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-halus);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--burgundy);
+            box-shadow: 0 0 0 3px rgba(122, 59, 76, 0.1);
+        }
+
+        button {
+            width: 100%;
+            background-color: var(--burgundy);
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #5d2b38;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(122, 59, 76, 0.2);
+        }
+
+        #error-msg {
+            color: #d84a5f;
+            font-size: 13px;
+            margin-top: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h2>SIAWO</h2>
+        <p>Lunelle Wedding Organizer</p>
+
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="Masukkan username" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Masukkan password" required>
+            </div>
+
+            <button type="submit">Masuk ke Sistem</button>
+            <p id="error-msg">Username atau Password salah!</p>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Mencegah web me-refresh
+            
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            // Logika sederhana: Username 'admin', Password 'lunelle2026'
+            if (user === 'admin' && pass === 'lunelle2026') {
+                // Jika benar, arahkan ke file index.html (Dashboard)
+                window.location.href = 'index.html';
+            } else {
+                // Jika salah, tampilkan pesan error
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        });
+    </script>
+
+</body>
+</html>
