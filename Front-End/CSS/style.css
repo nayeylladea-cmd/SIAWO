@@ -844,3 +844,41 @@ button:hover, input[type="submit"]:hover, .btn:hover {
     color: var(--burgundy); /* Berubah menjadi warna tema Burgundy Lunelle */
     transform: scale(1.15); /* Efek membesar sedikit agar terasa premium */
 }
+
+/* =========================================
+   PERBAIKAN UI TABEL (STATUS & TOMBOL AKSI)
+========================================= */
+
+/* Memastikan semua isi tabel rata tengah secara vertikal */
+td {
+    vertical-align: middle !important;
+}
+
+/* Mempercantik bentuk Status (Badge / Label) */
+td span {
+    padding: 6px 14px !important;
+    border-radius: 50px !important; /* Membuat bentuknya melengkung seperti pil */
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    display: inline-block;
+    white-space: nowrap !important; /* Mencegah teks panjang turun ke baris baru */
+    letter-spacing: 0.3px;
+}
+
+/* Memperkecil dan memberi jarak pada tombol Edit & Hapus di tabel */
+td button {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    margin-right: 5px !important; /* Memberi celah antar tombol agar tidak menempel */
+}
+
+/* Memberi warna merah khusus untuk tombol Hapus agar lebih intuitif */
+td button:contains("Hapus"), 
+td button.btn-hapus,
+td button:last-child {
+    background-color: #d84a5f !important; 
+}
+td button:last-child:hover {
+    background-color: #be3b4e !important;
+}
