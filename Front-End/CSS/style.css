@@ -884,23 +884,38 @@ td button:last-child:hover {
 }
 
 /* ========================================= */
-/* PENGATURAN CETAK (PRINT) LAPORAN          */
+/* PENGATURAN CETAK (PRINT) LAPORAN RESMI    */
 /* ========================================= */
+
+/* Sembunyikan elemen cetak di tampilan web normal */
+.print-only { display: none; }
+
 @media print {
-    /* 1. Sembunyikan menu samping, header, kotak pencarian, dan semua tombol */
-    aside, nav, .sidebar, .navigation, header, button, input {
+    /* Atur ukuran kertas menjadi A4 dengan margin standar dokumen resmi */
+    @page {
+        size: A4;
+        margin: 2cm;
+    }
+
+    /* Kembalikan elemen cetak agar muncul */
+    .print-only { display: block; }
+    
+    /* Sembunyikan semua tombol, menu samping, dan deskripsi web */
+    aside, nav, .sidebar, .navigation, header, button, input, .no-print {
         display: none !important;
     }
 
-    /* 2. Hilangkan background abu-abu/warna-warni di luar konten agar hemat tinta */
+    /* Ubah font menjadi gaya formal cetak dan hilangkan background web */
     body, main, .main-content {
         margin: 0 !important;
         padding: 0 !important;
         background: white !important;
         width: 100% !important;
+        color: black !important;
+        font-family: "Times New Roman", Times, serif !important;
     }
 
-    /* 3. Bersihkan bayangan (shadow) dan garis pada kartu konten */
+    /* Hilangkan bayangan kotak web */
     .content-card {
         box-shadow: none !important;
         border: none !important;
@@ -908,14 +923,38 @@ td button:last-child:hover {
         margin: 0 !important;
     }
 
-    /* 4. Paksa browser tetap mencetak warna pada Kotak Ringkasan (Kas/Piutang) */
-    * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+    /* Format Kotak Ringkasan agar berjajar rapi di kertas */
+    .stats-grid {
+        display: flex !important;
+        justify-content: space-between !important;
+        gap: 15px !important;
+    }
+    .stat-card {
+        flex: 1 !important;
+        border: 1px solid black !important;
+        background: transparent !important;
+        color: black !important;
+        text-align: center;
+        padding: 15px !important;
+    }
+    .stat-card h3 {
+        color: black !important;
+        font-size: 18pt !important;
     }
 
-    /* 5. Pastikan tabel tidak terpotong di tengah baris jika berlanjut ke halaman 2 */
-    table, tr, td, th {
-        page-break-inside: avoid;
+    /* Format Tabel Resmi */
+    table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+    }
+    th, td {
+        border: 1px solid black !important;
+        padding: 8px !important;
+        color: black !important;
+    }
+    th {
+        background-color: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 }
