@@ -404,29 +404,42 @@
                 </div>
             </section>
             
-           <!-- ============================== -->
+        <!-- ============================== -->
             <!-- HALAMAN LAPORAN KEUANGAN       -->
             <!-- ============================== -->
             <section id="laporan-page" class="page">
                 <style>
-                    /* Gaya khusus untuk menyulap web menjadi kertas A4 saat di-print */
+                    /* 1. GAYA KHUSUS SAAT DILIHAT DI LAYAR WEB */
+                    @media screen {
+                        .print-only { display: none !important; }
+                    }
+
+                    /* 2. GAYA KHUSUS SAAT DI-PRINT KE KERTAS A4 */
                     @media print {
                         body * { visibility: hidden; }
                         #laporan-page, #laporan-page * { visibility: visible; }
-                        #laporan-page { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+                        #laporan-page { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; font-family: 'Times New Roman', Times, serif; color: #000; }
+                        
+                        /* Sembunyikan elemen web yang tidak perlu diprint */
                         .no-print { display: none !important; }
-                        .kertas-laporan { padding: 0 !important; width: 100%; color: #000 !important; box-shadow: none !important; }
-                        .tabel-formal th { background-color: #e9ecef !important; color: #000 !important; font-weight: bold !important; -webkit-print-color-adjust: exact; }
-                        .tabel-formal th, .tabel-formal td { border: 1px solid #000 !important; }
+                        
+                        /* Tampilkan elemen khusus kertas (Kop Surat & TTD) */
+                        .print-only { display: block !important; }
+                        
+                        /* Rombak tabel web jadi tabel formal bergaris hitam */
+                        .tabel-laporan-container { box-shadow: none !important; background: transparent !important; padding: 0 !important; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #000 !important; padding: 8px !important; color: #000 !important; }
+                        th { background-color: #f2f2f2 !important; font-weight: bold !important; -webkit-print-color-adjust: exact; }
                     }
                 </style>
 
-                <!-- Tombol dan Header (Disembunyikan saat di-print) -->
+                <!-- HEADER WEB (Hilang saat diprint) -->
                 <div class="content-card no-print" style="margin-bottom: 20px;">
                     <div class="section-heading" style="border-bottom: none; margin-bottom: 0;">
                         <div>
                             <h2>Laporan Keuangan</h2>
-                            <p>Format standar akuntansi untuk pencetakan dokumen resmi.</p>
+                            <p>Pantau arus kas dan ringkasan transaksi perusahaan.</p>
                         </div>
                         <button class="primary-button" type="button" onclick="window.print()">
                             <i class="fa-solid fa-print"></i> Cetak Laporan (A4)
@@ -434,85 +447,73 @@
                     </div>
                 </div>
 
-                <!-- Kertas Laporan Formal (Akan tercetak utuh) -->
-                <div class="content-card kertas-laporan" style="font-family: 'Times New Roman', Times, serif; color: #000; padding: 40px;">
-                    
-                    <!-- KOP SURAT FORMAL -->
-                    <div style="text-align: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 25px;">
+                <!-- KARTU STATISTIK ESTETIK (Hilang saat diprint) -->
+                <div class="stats-grid no-print" style="margin-bottom: 25px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                    <article class="stat-card" style="background: #eff6ff; border-color: #bfdbfe; border-left: 4px solid #3b82f6;">
+                        <p style="color: #1e40af; font-weight: 600;">Total Kontrak Transaksi</p>
+                        <h3 id="laporan-total-kontrak" style="color: #1d4ed8; font-size: 24px;">Rp0</h3>
+                    </article>
+                    <article class="stat-card" style="background: #f0fdf4; border-color: #c6f6d5; border-left: 4px solid #2ca068;">
+                        <p style="color: #22543d; font-weight: 600;">Kas Masuk (Real Cair)</p>
+                        <h3 id="laporan-kas-masuk" style="color: #2ca068; font-size: 24px;">Rp0</h3>
+                    </article>
+                    <article class="stat-card" style="background: #fff5f5; border-color: #fed7d7; border-left: 4px solid #e53e3e;">
+                        <p style="color: #9b2c2c; font-weight: 600;">Total Sisa Piutang Aktif</p>
+                        <h3 id="laporan-total-piutang" style="color: #e53e3e; font-size: 24px;">Rp0</h3>
+                    </article>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- AREA KHUSUS PRINT: KOP SURAT & RINGKASAN       -->
+                <!-- ============================================== -->
+                <div class="print-only">
+                    <div style="text-align: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 20px;">
                         <h1 style="margin: 0; font-size: 22px; font-weight: bold; text-transform: uppercase;">LUNELLE WEDDING ORGANIZER</h1>
                         <p style="margin: 5px 0 0 0; font-size: 14px;">Jl. Pahlawan No. 12, Semarang, Jawa Tengah</p>
                         <p style="margin: 0; font-size: 14px;">Telp: (024) 1234567 | Email: finance@lunellewedding.com</p>
                     </div>
-
-                    <!-- JUDUL LAPORAN -->
-                    <div style="text-align: center; margin-bottom: 35px;">
+                    <div style="text-align: center; margin-bottom: 25px;">
                         <h2 style="margin: 0; font-size: 16px; font-weight: bold; text-decoration: underline;">LAPORAN ARUS KAS DAN PIUTANG</h2>
                         <p style="margin: 5px 0 0 0; font-size: 13px;">Periode Pembukuan Berjalan</p>
                     </div>
-
-                    <!-- RINGKASAN -->
-                    <div style="margin-bottom: 30px;">
-                        <h3 style="font-size: 14px; margin-bottom: 10px; font-weight: bold;">A. RINGKASAN KEUANGAN</h3>
-                        <table style="width: 100%; max-width: 450px; border-collapse: collapse; font-size: 13px;">
-                            <tr>
-                                <td style="padding: 6px 0;">1. Total Nilai Kontrak Transaksi</td>
-                                <td style="padding: 6px 0; text-align: left; width: 20px;">Rp</td>
-                                <td style="padding: 6px 0; text-align: right; font-weight: bold;" id="laporan-total-kontrak">0</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 6px 0;">2. Total Kas Masuk (Real Cair)</td>
-                                <td style="padding: 6px 0; text-align: left; width: 20px;">Rp</td>
-                                <td style="padding: 6px 0; text-align: right; font-weight: bold;" id="laporan-kas-masuk">0</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 6px 0;">3. Total Sisa Piutang Aktif</td>
-                                <td style="padding: 6px 0; text-align: left; width: 20px;">Rp</td>
-                                <td style="padding: 6px 0; text-align: right; font-weight: bold;" id="laporan-total-piutang">0</td>
-                            </tr>
+                    <div style="margin-bottom: 25px;">
+                        <table style="width: 60%; border: none !important; font-size: 13px;">
+                            <tr><td style="border: none !important; padding: 4px 0; width: 45%;">1. Total Nilai Kontrak</td><td style="border: none !important; font-weight: bold;">: <span id="print-kontrak">Rp0</span></td></tr>
+                            <tr><td style="border: none !important; padding: 4px 0;">2. Total Kas Masuk</td><td style="border: none !important; font-weight: bold;">: <span id="print-kas">Rp0</span></td></tr>
+                            <tr><td style="border: none !important; padding: 4px 0;">3. Total Sisa Piutang</td><td style="border: none !important; font-weight: bold;">: <span id="print-piutang">Rp0</span></td></tr>
                         </table>
                     </div>
+                </div>
 
-                    <!-- RINCIAN TABEL -->
-                    <div style="margin-bottom: 40px;">
-                        <h3 style="font-size: 14px; margin-bottom: 10px; font-weight: bold;">B. RINCIAN KAS MASUK (PEMBAYARAN)</h3>
-                        <table class="tabel-formal" style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #000;">
+                <!-- TABEL DATA (Muncul di Web & Print) -->
+                <div class="content-card tabel-laporan-container">
+                    <h3 class="no-print" style="margin-bottom: 15px; font-size: 16px; color: var(--pink-dark);">Rincian Pembayaran Masuk</h3>
+                    <div class="table-wrapper">
+                        <table>
                             <thead>
-                                <tr style="background-color: #f2f2f2;">
-                                    <th style="padding: 8px; border: 1px solid #000; text-align: center; width: 5%;">No</th>
-                                    <th style="padding: 8px; border: 1px solid #000; text-align: center; width: 12%;">ID Trx</th>
-                                    <th style="padding: 8px; border: 1px solid #000; text-align: left; width: 18%;">Tanggal Bayar</th>
-                                    <th style="padding: 8px; border: 1px solid #000; text-align: left; width: 20%;">Metode</th>
-                                    <th style="padding: 8px; border: 1px solid #000; text-align: left; width: 25%;">Keterangan</th>
-                                    <th style="padding: 8px; border: 1px solid #000; text-align: right; width: 20%;">Jumlah (Rp)</th>
+                                <tr>
+                                    <th>ID Trx</th>
+                                    <th>Tanggal Bayar</th>
+                                    <th>Jumlah (Rp)</th>
+                                    <th>Metode</th>
+                                    <th>Keterangan</th>
                                 </tr>
                             </thead>
                             <tbody id="tabel-laporan-kas">
-                                <!-- Data dimasukkan via JS -->
+                                <!-- Data dimuat oleh JavaScript -->
                             </tbody>
                         </table>
                     </div>
+                </div>
 
-                    <!-- TANDA TANGAN -->
-                    <div style="display: flex; justify-content: flex-end; margin-top: 40px; font-size: 13px;">
-                        <div style="text-align: center; width: 250px;">
-                            <p style="margin-bottom: 80px;">Semarang, <script>document.write(new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}))</script></p>
-                            <p style="margin: 0; font-weight: bold; text-decoration: underline;">Naylla Dea Navanda</p>
-                            <p style="margin: 5px 0 0 0;">Finance / Accounting</p>
-                        </div>
+                <!-- ============================================== -->
+                <!-- AREA KHUSUS PRINT: TANDA TANGAN                -->
+                <!-- ============================================== -->
+                <div class="print-only" style="display: flex; justify-content: flex-end; margin-top: 40px; font-size: 13px;">
+                    <div style="text-align: center; width: 250px;">
+                        <p style="margin-bottom: 80px;">Semarang, <script>document.write(new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}))</script></p>
+                        <p style="margin: 0; font-weight: bold; text-decoration: underline;">Naylla Dea Navanda</p>
+                        <p style="margin: 5px 0 0 0;">Finance / Accounting</p>
                     </div>
-
                 </div>
             </section>
-            
-            <footer class="page-footer">
-                <p>© 2026 SIAWO by Lunelle Wedding · Make every moment beautiful ♡</p>
-            </footer>
-        </main>
-    </div>
-
-    <div id="toast" class="toast" role="status"></div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="../JS/script.js" defer></script>
-</body>
-</html>
