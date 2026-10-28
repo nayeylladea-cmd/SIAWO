@@ -909,35 +909,37 @@ function renderLaporan() {
     const totalKontrak = dataTransaksi.reduce((sum, item) => sum + angka(item.total_transaksi), 0);
     const totalPiutang = dataTransaksi.reduce((sum, item) => sum + getPiutang(item), 0);
 
-    // Fungsi format khusus laporan (angka saja, tanpa simbol Rp karena sudah ada di kop HTML)
-    const formatAngka = (num) => new Intl.NumberFormat("id-ID").format(angka(num));
-
+    // 1. Update ke Layar Web (Kartu Warna-Warni)
     const elKas = document.getElementById("laporan-kas-masuk");
     const elKontrak = document.getElementById("laporan-total-kontrak");
     const elPiutang = document.getElementById("laporan-total-piutang");
+    if (elKas) elKas.textContent = rupiah(totalKas);
+    if (elKontrak) elKontrak.textContent = rupiah(totalKontrak);
+    if (elPiutang) elPiutang.textContent = rupiah(totalPiutang);
 
-    if (elKas) elKas.textContent = formatAngka(totalKas);
-    if (elKontrak) elKontrak.textContent = formatAngka(totalKontrak);
-    if (elPiutang) elPiutang.textContent = formatAngka(totalPiutang);
+    // 2. Update ke Area Print (Tersembunyi di web)
+    const printKas = document.getElementById("print-kas");
+    const printKontrak = document.getElementById("print-kontrak");
+    const printPiutang = document.getElementById("print-piutang");
+    if (printKas) printKas.textContent = rupiah(totalKas);
+    if (printKontrak) printKontrak.textContent = rupiah(totalKontrak);
+    if (printPiutang) printPiutang.textContent = rupiah(totalPiutang);
 
-    const tabelLaporan = document.getElementById("tabel-laporan-kas");
-    if (!tabelLaporan) return;
-
+    // 3. Render Tabel
     if (dataPembayaran.length === 0) {
-        tabelLaporan.innerHTML = `<tr><td colspan="6" style="padding: 15px; border: 1px solid #000; text-align: center;">Tidak ada data kas masuk.</td></tr>`;
+        setIsiTabel("tabel-laporan-kas", "", 5);
         return;
     }
 
-    const html = dataPembayaran.map((item, index) => `
+    const html = dataPembayaran.map(item => `
         <tr>
-            <td style="padding: 6px 8px; border: 1px solid #000; text-align: center;">${index + 1}</td>
-            <td style="padding: 6px 8px; border: 1px solid #000; text-align: center;">#${escapeHTML(item.id_transaksi)}</td>
-            <td style="padding: 6px 8px; border: 1px solid #000;">${tanggalIndonesia(item.tanggal_pembayaran)}</td>
-            <td style="padding: 6px 8px; border: 1px solid #000;">${escapeHTML(item.metode_pembayaran)}</td>
-            <td style="padding: 6px 8px; border: 1px solid #000;">${escapeHTML(item.keterangan)}</td>
-            <td style="padding: 6px 8px; border: 1px solid #000; text-align: right;">${formatAngka(item.jumlah_bayar)}</td>
+            <td><strong>#${escapeHTML(item.id_transaksi)}</strong></td>
+            <td>${tanggalIndonesia(item.tanggal_pembayaran)}</td>
+            <td><strong style="color: #198754;">${rupiah(item.jumlah_bayar)}</strong></td>
+            <td>${escapeHTML(item.metode_pembayaran)}</td>
+            <td>${escapeHTML(item.keterangan)}</td>
         </tr>
     `).join("");
 
-    tabelLaporan.innerHTML = html;
+    setIsiTabel("tabel-laporan-kas", html, 5);
 }
