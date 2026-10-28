@@ -413,7 +413,7 @@
             <!-- HALAMAN LAPORAN KEUANGAN       -->
             <!-- ============================== -->
             <section id="laporan-page" class="page">
-                <style>
+             <style>
                     /* 1. GAYA KHUSUS SAAT DILIHAT DI LAYAR WEB */
                     @media screen {
                         .print-only { display: none !important; }
@@ -421,21 +421,36 @@
 
                     /* 2. GAYA KHUSUS SAAT DI-PRINT KE KERTAS A4 */
                     @media print {
-                        body * { visibility: hidden; }
-                        #laporan-page, #laporan-page * { visibility: visible; }
-                        #laporan-page { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; font-family: 'Times New Roman', Times, serif; color: #000; }
+                        /* Pastikan warna latar, shadow, dan badge (lunas/jatuh tempo) tetap tercetak */
+                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+                        /* Sembunyikan menu samping dan header agar kertas bersih */
+                        .sidebar, .topbar { display: none !important; }
                         
-                        /* Sembunyikan elemen web yang tidak perlu diprint */
-                        .no-print { display: none !important; }
+                        /* Buat area konten selebar kertas penuh */
+                        .app-container { display: block !important; }
+                        .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
                         
-                        /* Tampilkan elemen khusus kertas (Kop Surat & TTD) */
-                        .print-only { display: block !important; }
+                        /* AJAIB: Hanya tampilkan halaman yang sedang aktif/dibuka! */
+                        .page:not(.active) { display: none !important; }
                         
-                        /* Rombak tabel web jadi tabel formal bergaris hitam */
-                        .tabel-laporan-container { box-shadow: none !important; background: transparent !important; padding: 0 !important; }
-                        table { width: 100%; border-collapse: collapse; }
-                        th, td { border: 1px solid #000 !important; padding: 8px !important; color: #000 !important; }
-                        th { background-color: #f2f2f2 !important; font-weight: bold !important; -webkit-print-color-adjust: exact; }
+                        /* Sembunyikan semua tombol dan kolom pencarian agar tidak ikut ter-print */
+                        button, input[type="text"], .no-print { display: none !important; }
+
+                        /* ==========================================
+                           GAYA KHUSUS: KERTAS LAPORAN KEUANGAN
+                           ========================================== */
+                        #laporan-page.active { font-family: 'Times New Roman', Times, serif; color: #000; }
+                        #laporan-page.active .print-only { display: block !important; }
+                        #laporan-page.active .tabel-laporan-container { box-shadow: none !important; background: transparent !important; padding: 0 !important; }
+                        #laporan-page.active table { width: 100%; border-collapse: collapse; }
+                        #laporan-page.active th, #laporan-page.active td { border: 1px solid #000 !important; padding: 8px !important; color: #000 !important; }
+                        #laporan-page.active th { background-color: #f2f2f2 !important; font-weight: bold !important; }
+
+                        /* ==========================================
+                           GAYA KHUSUS: KERTAS BUKU PIUTANG
+                           ========================================== */
+                        #piutang-page.active .content-card { box-shadow: none !important; border: none !important; padding: 0 !important; background: transparent !important; }
                     }
                 </style>
 
