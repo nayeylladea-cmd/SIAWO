@@ -402,7 +402,8 @@ function renderPembayaran() {
 function renderPiutang() {
     let totalSeluruhPiutang = 0;
     let transaksiBerhutang = 0;
-    let totalPenyisihan = 0; // Wadah untuk total cadangan kerugian piutang
+    let akumulasiTotalTagihan = 0;
+    let akumulasiTotalDibayar = 0;
 
     const keyword = document.getElementById("search-piutang")?.value.toLowerCase() || "";
 
@@ -417,6 +418,9 @@ function renderPiutang() {
         const totalBayar = getTotalPembayaran(item.id_transaksi);
         const sisa = Math.max(totalTagihan - totalBayar, 0);
 
+        akumulasiTotalTagihan += totalTagihan;
+        akumulasiTotalDibayar += totalBayar;
+
         if (sisa > 0) {
             totalSeluruhPiutang += sisa;
             transaksiBerhutang++;
@@ -424,6 +428,9 @@ function renderPiutang() {
 
         const persen = totalTagihan > 0 ? Math.min((totalBayar / totalTagihan) * 100, 100) : 0;
         
+        // ==========================================
+        // LOGIKA UMUR PIUTANG (JATUH TEMPO)
+        // ==========================================
         const tanggalAcara = new Date(item.tanggal_acara);
         const hariIni = new Date();
         hariIni.setHours(0, 0, 0, 0);
@@ -431,55 +438,44 @@ function renderPiutang() {
 
         let statusPiutang = "";
         let warnaStatus = "";
-        let warnaTeksSisa = "#2ca068";
-        let nilaiPenyisihan = 0; // Kerugian per transaksi
+        let warnaTeksSisa = "#2ca068"; // Default hijau (lunas)
 
         if (sisa <= 0) {
             statusPiutang = "LUNAS";
-            warnaStatus = "#198754";
+            warnaStatus = "#198754"; // Hijau
         } else {
-            warnaTeksSisa = "#d84a5f";
+            warnaTeksSisa = "#d84a5f"; // Merah untuk sisa uang
             const selisihWaktu = hariIni.getTime() - tanggalAcara.getTime();
             const selisihHari = Math.ceil(selisihWaktu / (1000 * 3600 * 24));
 
             if (selisihHari > 0) {
                 statusPiutang = `JATUH TEMPO (${selisihHari} Hari)`;
-                warnaStatus = "#dc3545";
-                
-                // LOGIKA PENYISIHAN PIUTANG (Allowance for Bad Debts)
-                if (selisihHari <= 30) {
-                    nilaiPenyisihan = sisa * 0.05; // Risiko 5%
-                } else if (selisihHari <= 60) {
-                    nilaiPenyisihan = sisa * 0.10; // Risiko 10%
-                } else {
-                    nilaiPenyisihan = sisa * 0.20; // Risiko 20%
-                }
+                warnaStatus = "#dc3545"; // Merah (Bahaya)
             } else if (selisihHari === 0) {
                 statusPiutang = `HARI H ACARA!`;
-                warnaStatus = "#fd7e14";
+                warnaStatus = "#fd7e14"; // Orange
             } else {
                 statusPiutang = `BELUM JATUH TEMPO`;
-                warnaStatus = "#b7791f";
+                warnaStatus = "#b7791f"; // Kuning (Aman)
             }
         }
         
-        totalPenyisihan += nilaiPenyisihan;
-
         const badgeJatuhTempo = `<span style="display:inline-block; padding:4px 8px; border-radius:6px; background:${warnaStatus}15; color:${warnaStatus}; font-size:10px; font-weight:700; border: 1px solid ${warnaStatus}40; margin-bottom: 5px;">${statusPiutang}</span>`;
-        
-        // Peringatan UI UI jika ada risiko
-        let infoPenyisihan = "";
-        if (nilaiPenyisihan > 0) {
-            infoPenyisihan = `<div style="font-size:10px; color:var(--pink-dark); margin-top:4px;">⚠️ Risiko Tak Tertagih: <br>${rupiah(nilaiPenyisihan)}</div>`;
-        }
+        // ==========================================
 
         const dataPelanggan = state.pelanggan.find(p => String(p.id_pelanggan) === String(item.id_pelanggan));
         
         let tombolWA = "";
         if (sisa > 0 && dataPelanggan && dataPelanggan.no_telepon) {
             const noWA = dataPelanggan.no_telepon.replace(/[^0-9]/g, '').replace(/^0/, '62');
-            let teksPeringatan = statusPiutang.includes("JATUH TEMPO") ? `\n\n⚠️ *PEMBERITAHUAN:* Tagihan ini telah melewati tanggal acara (Jatuh Tempo).` : "";
+            
+            // Logika Pesan Peringatan WA
+            let teksPeringatan = statusPiutang.includes("JATUH TEMPO") 
+                ? `\n\n⚠️ *PEMBERITAHUAN:* Tagihan ini telah melewati tanggal acara (Jatuh Tempo).` 
+                : "";
+            
             const teksPesan = encodeURIComponent(`Halo ${dataPelanggan.nama_pelanggan},\n\nKami dari *SIAWO - Lunelle Wedding* ingin menginformasikan ringkasan tagihan acara Anda.${teksPeringatan}\n\nTotal Tagihan: ${rupiah(totalTagihan)}\nTotal Dibayar: ${rupiah(totalBayar)}\n*Sisa Piutang: ${rupiah(sisa)}*\n\nMohon untuk dapat melakukan pelunasan sisa tagihan tersebut. Terima kasih atas kepercayaannya! ♡`);
+            
             tombolWA = `<a href="https://wa.me/${noWA}?text=${teksPesan}" target="_blank" style="display:inline-block; margin-top:4px; padding:6px 12px; background:#25D366; color:white; border-radius:6px; font-size:11px; font-weight:bold; text-decoration:none; box-shadow: 0 2px 5px rgba(37,211,102,0.3); transition: 0.2s;">💬 Tagih via WA</a>`;
         } else if (sisa > 0) {
             tombolWA = `<span style="display:inline-block; margin-top:4px; font-size:10px; color:var(--muted);">No. HP tidak valid</span>`;
@@ -502,10 +498,7 @@ function renderPiutang() {
                     </div>
                     <div style="font-size:10px; color:var(--muted);">Terbayar: ${rupiah(totalBayar)}</div>
                 </td>
-                <td>
-                    <strong style="color: ${warnaTeksSisa}; font-size: 15px;">${rupiah(sisa)}</strong>
-                    ${infoPenyisihan}
-                </td>
+                <td><strong style="color: ${warnaTeksSisa}; font-size: 15px;">${rupiah(sisa)}</strong></td>
                 <td style="text-align: center;">
                     ${badgeJatuhTempo}
                     <br>
@@ -517,18 +510,17 @@ function renderPiutang() {
 
     setIsiTabel("tabel-piutang", html, 6);
 
-    // Render Data ke Kartu Statistik HTML
     const totalElem = document.getElementById("summary-total-piutang");
     if (totalElem) totalElem.textContent = rupiah(totalSeluruhPiutang);
 
     const orangElem = document.getElementById("summary-orang-piutang");
-    if (orangElem) orangElem.textContent = `${transaksiBerhutang} Transaksi Berhutang`;
+    if (orangElem) orangElem.textContent = `${transaksiBerhutang} Transaksi`;
 
-    const penyisihanElem = document.getElementById("summary-penyisihan");
-    if (penyisihanElem) penyisihanElem.textContent = rupiah(totalPenyisihan);
-
-    const bersihElem = document.getElementById("summary-piutang-bersih");
-    if (bersihElem) bersihElem.textContent = rupiah(totalSeluruhPiutang - totalPenyisihan);
+    const rasioElem = document.getElementById("summary-rasio-piutang");
+    if (rasioElem) {
+        const persentaseKolektibilitas = akumulasiTotalTagihan > 0 ? Math.round((akumulasiTotalDibayar / akumulasiTotalTagihan) * 100) : 0;
+        rasioElem.textContent = `${persentaseKolektibilitas}%`;
+    }
 }
 
 function isiDropdown(id, data, kolomID, pembuatLabel) {
