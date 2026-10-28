@@ -681,6 +681,26 @@ async function savePaket(event) {
     }
 }
 
+async function saveTransaksi(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const id = ambilID(form, "id_transaksi");
+    const payload = dataForm(form, ["id_pelanggan", "id_paket", "tanggal_transaksi", "tanggal_acara", "total_transaksi", "status"]);
+    if (payload.total_transaksi !== undefined) payload.total_transaksi = angka(payload.total_transaksi);
+
+    try {
+        if (id) await supabaseRequest("transaksi_wedding", { method: "PATCH", filters: { id_transaksi: `eq.${id}` }, body: payload });
+        else await supabaseRequest("transaksi_wedding", { method: "POST", body: payload });
+
+        resetForm("form-transaksi");
+        tampilkanForm("form-transaksi", false);
+        await loadAllData();
+        tampilkanPesan("Transaksi berhasil disimpan.");
+    } catch (error) {
+        tampilkanPesan("Gagal menyimpan transaksi: " + error.message, "error");
+    }
+}
+
 async function savePembayaran(event) {
     event.preventDefault();
     const form = event.currentTarget;
