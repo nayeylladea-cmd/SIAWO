@@ -709,13 +709,53 @@ async function savePembayaran(event) {
     if (payload.jumlah_bayar !== undefined) payload.jumlah_bayar = angka(payload.jumlah_bayar);
 
     try {
-        if (id) await supabaseRequest("pembayaran", { method: "PATCH", filters: { id_pembayaran: `eq.${id}` }, body: payload });
-        else await supabaseRequest("pembayaran", { method: "POST", body: payload });
+        // 1. Simpan data pembayaran ke Supabase (Tambah baru atau Edit)
+        if (id) {
+            await supabaseRequest("pembayaran", { method: "PATCH", filters: { id_pembayaran: `eq.${id}` }, body: payload });
+        } else {
+            await supabaseRequest("pembayaran", { method: "POST", body: payload });
+        }
+
+        // ==========================================
+        // OTOMATISASI STATUS TRANSAKSI
+        // ==========================================
+        const idTransaksiTerkait = payload.id_transaksi;
+        
+        // Ambil data transaksi terkait dari state lokal
+        const transaksiData = state.transaksi.find(t => String(t.id_transaksi) === String(idTransaksiTerkait));
+        
+        if (transaksiData) {
+            // Hitung total tagihan dan total pembayaran sementara (termasuk pembayaran baru ini)
+            const totalTagihan = angka(transaksiData.total_transaksi);
+            
+            // Ambil pembayaran lama lalu tambahkan jumlah bayar yang baru diinput
+            const pembayaranLama = state.pembayaran
+                .filter(p => String(p.id_transaksi) === String(idTransaksiTerkait) && String(p.id_pembayaran) !== String(id))
+                .reduce((sum, p) => sum + angka(p.jumlah_bayar), 0);
+            
+            const totalSudahDibayar = pembayaranLama + angka(payload.jumlah_bayar);
+
+            // Tentukan status otomatis berdasarkan sisa tagihan
+            let statusBaru = transaksiData.status;
+            if (totalSudahDibayar >= totalTagihan) {
+                statusBaru = "Lunas";
+            } else if (totalSudahDibayar > 0) {
+                statusBaru = "Berlangsung"; // Status berubah otomatis jika sudah dicicil
+            }
+
+            // Kirim perintah update status otomatis ke tabel transaksi_wedding di Supabase
+            await supabaseRequest("transaksi_wedding", {
+                method: "PATCH",
+                filters: { id_transaksi: `eq.${idTransaksiTerkait}` },
+                body: { status: statusBaru }
+            });
+        }
+        // ==========================================
 
         resetForm("form-pembayaran");
         tampilkanForm("form-pembayaran", false);
         await loadAllData();
-        tampilkanPesan("Pembayaran berhasil disimpan.");
+        tampilkanPesan("Pembayaran berhasil disimpan dan status transaksi diperbarui otomatis.");
     } catch (error) {
         tampilkanPesan("Gagal menyimpan pembayaran: " + error.message, "error");
     }
