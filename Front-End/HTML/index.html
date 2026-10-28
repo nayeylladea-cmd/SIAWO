@@ -413,7 +413,7 @@
             <!-- HALAMAN LAPORAN KEUANGAN       -->
             <!-- ============================== -->
             <section id="laporan-page" class="page">
-             <style>
+     <style>
                     /* 1. GAYA KHUSUS SAAT DILIHAT DI LAYAR WEB */
                     @media screen {
                         .print-only { display: none !important; }
@@ -421,21 +421,20 @@
 
                     /* 2. GAYA KHUSUS SAAT DI-PRINT KE KERTAS A4 */
                     @media print {
-                        /* Pastikan warna latar, shadow, dan badge (lunas/jatuh tempo) tetap tercetak */
                         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-                        /* Sembunyikan menu samping dan header agar kertas bersih */
+                        @page { margin: 1cm; } /* Maksimalkan ruang kertas */
+
                         .sidebar, .topbar { display: none !important; }
-                        
-                        /* Buat area konten selebar kertas penuh */
                         .app-container { display: block !important; }
                         .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
                         
-                        /* AJAIB: Hanya tampilkan halaman yang sedang aktif/dibuka! */
                         .page:not(.active) { display: none !important; }
-                        
-                        /* Sembunyikan semua tombol dan kolom pencarian agar tidak ikut ter-print */
                         button, input[type="text"], .no-print { display: none !important; }
+
+                        /* Mencegah tabel terpotong di tepi kertas */
+                        .table-wrapper { overflow: visible !important; width: 100% !important; }
+                        table { width: 100% !important; max-width: 100% !important; table-layout: auto !important; }
 
                         /* ==========================================
                            GAYA KHUSUS: KERTAS LAPORAN KEUANGAN
@@ -443,17 +442,18 @@
                         #laporan-page.active { font-family: 'Times New Roman', Times, serif; color: #000; }
                         #laporan-page.active .print-only { display: block !important; }
                         #laporan-page.active .tabel-laporan-container { box-shadow: none !important; background: transparent !important; padding: 0 !important; }
-                        #laporan-page.active table { width: 100%; border-collapse: collapse; }
-                        #laporan-page.active th, #laporan-page.active td { border: 1px solid #000 !important; padding: 8px !important; color: #000 !important; }
+                        #laporan-page.active th, #laporan-page.active td { border: 1px solid #000 !important; padding: 6px !important; color: #000 !important; font-size: 12px !important; }
                         #laporan-page.active th { background-color: #f2f2f2 !important; font-weight: bold !important; }
 
                         /* ==========================================
                            GAYA KHUSUS: KERTAS BUKU PIUTANG
                            ========================================== */
                         #piutang-page.active .content-card { box-shadow: none !important; border: none !important; padding: 0 !important; background: transparent !important; }
+                        #piutang-page.active table { font-size: 10px !important; } /* Perkecil sedikit ukuran teks agar 6 kolom muat */
+                        #piutang-page.active th, #piutang-page.active td { padding: 5px !important; word-wrap: break-word; }
+                        #piutang-page.active .stats-grid { gap: 10px !important; } 
                     }
                 </style>
-
                 <!-- HEADER WEB (Hilang saat diprint) -->
                 <div class="content-card no-print" style="margin-bottom: 20px;">
                     <div class="section-heading" style="border-bottom: none; margin-bottom: 0;">
