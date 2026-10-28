@@ -414,6 +414,7 @@
             <!-- ============================== -->
             <section id="laporan-page" class="page">
      <style>
+                <style>
                     /* 1. GAYA KHUSUS SAAT DILIHAT DI LAYAR WEB */
                     @media screen {
                         .print-only { display: none !important; }
@@ -449,9 +450,12 @@
                            GAYA KHUSUS: KERTAS BUKU PIUTANG
                            ========================================== */
                         #piutang-page.active .content-card { box-shadow: none !important; border: none !important; padding: 0 !important; background: transparent !important; }
-                        #piutang-page.active table { font-size: 10px !important; } /* Perkecil sedikit ukuran teks agar 6 kolom muat */
+                        #piutang-page.active table { font-size: 10px !important; } 
                         #piutang-page.active th, #piutang-page.active td { padding: 5px !important; word-wrap: break-word; }
                         #piutang-page.active .stats-grid { gap: 10px !important; } 
+                        
+                        /* INI YANG MENGHILANGKAN TOMBOL WHATSAPP SAAT DIPRINT */
+                        #piutang-page.active table a { display: none !important; }
                     }
                 </style>
                 <!-- HEADER WEB (Hilang saat diprint) -->
