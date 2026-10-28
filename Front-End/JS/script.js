@@ -268,12 +268,10 @@ function renderDashboard() {
     // ==========================================
     const ctx = document.getElementById('keuanganChart');
     if (ctx) {
-        // Hancurkan grafik lama jika sudah ada agar tidak menumpuk saat refresh
         if (grafikKeuangan) {
             grafikKeuangan.destroy();
         }
 
-        // Gambar grafik baru
         grafikKeuangan = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -376,16 +374,13 @@ function renderTransaksi() {
 
 function renderPembayaran() {
     const html = state.pembayaran.map(item => {
-        // 1. Cari data transaksi berdasarkan id_transaksi yang dibayar
         const transaksi = state.transaksi.find(t => String(t.id_transaksi) === String(item.id_transaksi));
-        
-        // 2. Ambil nama pelanggan dari transaksi tersebut
         const namaPelanggan = transaksi ? getNamaPelanggan(transaksi.id_pelanggan) : "-";
 
         return `
             <tr>
                 <td>${escapeHTML(item.id_transaksi)}</td>
-                <td><strong>${escapeHTML(namaPelanggan)}</strong></td> <!-- Ini baris Nama Pelanggan -->
+                <td><strong>${escapeHTML(namaPelanggan)}</strong></td>
                 <td>${tanggalIndonesia(item.tanggal_pembayaran)}</td>
                 <td>${rupiah(item.jumlah_bayar)}</td>
                 <td>${escapeHTML(item.metode_pembayaran)}</td>
@@ -395,14 +390,13 @@ function renderPembayaran() {
         `;
     }).join("");
     
-    // Ubah angka 6 menjadi 7 karena sekarang totalnya ada 7 kolom
     setIsiTabel("tabel-pembayaran", html, 7); 
 }
 
 function renderPiutang() {
     let totalSeluruhPiutang = 0;
     let transaksiBerhutang = 0;
-    let totalPenyisihan = 0; // Wadah untuk total cadangan kerugian piutang
+    let totalPenyisihan = 0; 
 
     const keyword = document.getElementById("search-piutang")?.value.toLowerCase() || "";
 
@@ -432,7 +426,7 @@ function renderPiutang() {
         let statusPiutang = "";
         let warnaStatus = "";
         let warnaTeksSisa = "#2ca068";
-        let nilaiPenyisihan = 0; // Kerugian per transaksi
+        let nilaiPenyisihan = 0; 
 
         if (sisa <= 0) {
             statusPiutang = "LUNAS";
@@ -446,13 +440,12 @@ function renderPiutang() {
                 statusPiutang = `JATUH TEMPO (${selisihHari} Hari)`;
                 warnaStatus = "#dc3545";
                 
-                // LOGIKA PENYISIHAN PIUTANG (Allowance for Bad Debts)
                 if (selisihHari <= 30) {
-                    nilaiPenyisihan = sisa * 0.05; // Risiko 5%
+                    nilaiPenyisihan = sisa * 0.05; 
                 } else if (selisihHari <= 60) {
-                    nilaiPenyisihan = sisa * 0.10; // Risiko 10%
+                    nilaiPenyisihan = sisa * 0.10; 
                 } else {
-                    nilaiPenyisihan = sisa * 0.20; // Risiko 20%
+                    nilaiPenyisihan = sisa * 0.20; 
                 }
             } else if (selisihHari === 0) {
                 statusPiutang = `HARI H ACARA!`;
@@ -516,7 +509,6 @@ function renderPiutang() {
 
     setIsiTabel("tabel-piutang", html, 6);
 
-    // Render Data ke Kartu Statistik HTML
     const totalElem = document.getElementById("summary-total-piutang");
     if (totalElem) totalElem.textContent = rupiah(totalSeluruhPiutang);
 
@@ -559,7 +551,7 @@ function renderAll() {
     renderTransaksi();
     renderPembayaran();
     renderPiutang();
-    renderLaporan(); // Pastikan baris ini ada
+    renderLaporan(); 
     renderPilihanDropdown();
 }
 
@@ -584,7 +576,6 @@ function showPage(namaHalaman) {
     const elemenJudul = document.getElementById("page-title");
     if (elemenJudul) elemenJudul.textContent = judul[namaHalaman] || "SIAWO";
 }
-
 
 function setupNavigation() {
     document.querySelectorAll("[data-page]").forEach(tombol => {
@@ -681,6 +672,7 @@ async function savePaket(event) {
     }
 }
 
+// INI FUNGSI YANG TADI HILANG DAN MEMBUAT LAYAR KOSONG:
 async function saveTransaksi(event) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -709,47 +701,38 @@ async function savePembayaran(event) {
     if (payload.jumlah_bayar !== undefined) payload.jumlah_bayar = angka(payload.jumlah_bayar);
 
     try {
-        // 1. Simpan data pembayaran ke Supabase (Tambah baru atau Edit)
         if (id) {
             await supabaseRequest("pembayaran", { method: "PATCH", filters: { id_pembayaran: `eq.${id}` }, body: payload });
         } else {
             await supabaseRequest("pembayaran", { method: "POST", body: payload });
         }
 
-        // ==========================================
         // OTOMATISASI STATUS TRANSAKSI
-        // ==========================================
         const idTransaksiTerkait = payload.id_transaksi;
-        
-        // Ambil data transaksi terkait dari state lokal
         const transaksiData = state.transaksi.find(t => String(t.id_transaksi) === String(idTransaksiTerkait));
         
         if (transaksiData) {
             const totalTagihan = angka(transaksiData.total_transaksi);
             
-            // Hitung total keseluruhan pembayaran untuk transaksi ini
             const pembayaranLama = state.pembayaran
                 .filter(p => String(p.id_transaksi) === String(idTransaksiTerkait) && String(p.id_pembayaran) !== String(id))
                 .reduce((sum, p) => sum + angka(p.jumlah_bayar), 0);
             
             const totalSudahDibayar = pembayaranLama + angka(payload.jumlah_bayar);
 
-            // Tentukan status otomatis berdasarkan jumlah yang sudah dibayar
             let statusBaru = transaksiData.status;
             if (totalSudahDibayar >= totalTagihan) {
                 statusBaru = "Lunas";
             } else if (totalSudahDibayar > 0) {
-                statusBaru = "Berlangsung"; // Berubah otomatis jadi Berlangsung karena sudah dicicil/DP
+                statusBaru = "Berlangsung"; 
             }
 
-            // Kirim perintah update status otomatis ke tabel transaksi_wedding di Supabase
             await supabaseRequest("transaksi_wedding", {
                 method: "PATCH",
                 filters: { id_transaksi: `eq.${idTransaksiTerkait}` },
                 body: { status: statusBaru }
             });
         }
-        // ==========================================
 
         resetForm("form-pembayaran");
         tampilkanForm("form-pembayaran", false);
@@ -908,33 +891,24 @@ const btnLogout = document.getElementById('btn-logout');
 
 if (btnLogout) {
     btnLogout.addEventListener('click', function(e) {
-        e.preventDefault(); // Mencegah efek klik bawaan browser
+        e.preventDefault(); 
         
-        // Munculkan pop-up konfirmasi
         const konfirmasi = confirm("Apakah Anda yakin ingin keluar dari sistem SIAWO?");
         
         if (konfirmasi) {
-            // Jika user memilih 'OK', arahkan kembali ke halaman login
             window.location.href = 'login.html';
         }
     });
 }
 
 function renderLaporan() {
-    // Ambil data pembayaran dari state (pastikan aman jika data kosong)
     const dataPembayaran = Array.isArray(state.pembayaran) ? state.pembayaran : [];
     const dataTransaksi = Array.isArray(state.transaksi) ? state.transaksi : [];
 
-    // Hitung total kas masuk
     const totalKas = dataPembayaran.reduce((sum, item) => sum + angka(item.jumlah_bayar), 0);
-    
-    // Hitung total nilai kontrak transaksi
     const totalKontrak = dataTransaksi.reduce((sum, item) => sum + angka(item.total_transaksi), 0);
-    
-    // Hitung total piutang keseluruhan
     const totalPiutang = dataTransaksi.reduce((sum, item) => sum + getPiutang(item), 0);
 
-    // Masukkan ke elemen teks ringkasan
     const elKas = document.getElementById("laporan-kas-masuk");
     const elKontrak = document.getElementById("laporan-total-kontrak");
     const elPiutang = document.getElementById("laporan-total-piutang");
@@ -943,7 +917,6 @@ function renderLaporan() {
     if (elKontrak) elKontrak.textContent = rupiah(totalKontrak);
     if (elPiutang) elPiutang.textContent = rupiah(totalPiutang);
 
-    // Render tabel rincian kas masuk
     if (dataPembayaran.length === 0) {
         setIsiTabel("tabel-laporan-kas", "", 5);
         return;
