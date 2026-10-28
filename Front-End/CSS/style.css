@@ -882,3 +882,40 @@ td button:last-child {
 td button:last-child:hover {
     background-color: #be3b4e !important;
 }
+
+/* ========================================= */
+/* PENGATURAN CETAK (PRINT) LAPORAN          */
+/* ========================================= */
+@media print {
+    /* 1. Sembunyikan menu samping, header, kotak pencarian, dan semua tombol */
+    aside, nav, .sidebar, .navigation, header, button, input {
+        display: none !important;
+    }
+
+    /* 2. Hilangkan background abu-abu/warna-warni di luar konten agar hemat tinta */
+    body, main, .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        width: 100% !important;
+    }
+
+    /* 3. Bersihkan bayangan (shadow) dan garis pada kartu konten */
+    .content-card {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* 4. Paksa browser tetap mencetak warna pada Kotak Ringkasan (Kas/Piutang) */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* 5. Pastikan tabel tidak terpotong di tengah baris jika berlanjut ke halaman 2 */
+    table, tr, td, th {
+        page-break-inside: avoid;
+    }
+}
