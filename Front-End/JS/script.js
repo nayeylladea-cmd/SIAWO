@@ -777,10 +777,20 @@ if (btnLogout) {
 }
 
 function renderLaporan() {
-    const totalKas = state.pembayaran.reduce((sum, item) => sum + angka(item.jumlah_bayar), 0);
-    const totalKontrak = state.transaksi.reduce((sum, item) => sum + angka(item.total_transaksi), 0);
-    const totalPiutang = state.transaksi.reduce((sum, item) => sum + getPiutang(item), 0);
+    // Ambil data pembayaran dari state (pastikan aman jika data kosong)
+    const dataPembayaran = Array.isArray(state.pembayaran) ? state.pembayaran : [];
+    const dataTransaksi = Array.isArray(state.transaksi) ? state.transaksi : [];
 
+    // Hitung total kas masuk
+    const totalKas = dataPembayaran.reduce((sum, item) => sum + angka(item.jumlah_bayar), 0);
+    
+    // Hitung total nilai kontrak transaksi
+    const totalKontrak = dataTransaksi.reduce((sum, item) => sum + angka(item.total_transaksi), 0);
+    
+    // Hitung total piutang keseluruhan
+    const totalPiutang = dataTransaksi.reduce((sum, item) => sum + getPiutang(item), 0);
+
+    // Masukkan ke elemen teks ringkasan
     const elKas = document.getElementById("laporan-kas-masuk");
     const elKontrak = document.getElementById("laporan-total-kontrak");
     const elPiutang = document.getElementById("laporan-total-piutang");
@@ -789,7 +799,13 @@ function renderLaporan() {
     if (elKontrak) elKontrak.textContent = rupiah(totalKontrak);
     if (elPiutang) elPiutang.textContent = rupiah(totalPiutang);
 
-    const html = state.pembayaran.map(item => `
+    // Render tabel rincian kas masuk
+    if (dataPembayaran.length === 0) {
+        setIsiTabel("tabel-laporan-kas", "", 5);
+        return;
+    }
+
+    const html = dataPembayaran.map(item => `
         <tr>
             <td><strong>#${escapeHTML(item.id_transaksi)}</strong></td>
             <td>${tanggalIndonesia(item.tanggal_pembayaran)}</td>
