@@ -16,6 +16,7 @@ const state = {
 };
 
 let sedangMemuat = false;
+let grafikKeuangan = null;
 
 function angka(nilai) {
     const hasil = Number(nilai);
@@ -261,6 +262,60 @@ function renderDashboard() {
         const elemen = document.getElementById(id);
         if (elemen) elemen.style.width = `${Math.min(angka(nilai) / maksimum * 100, 100)}%`;
     });
+
+    // ==========================================
+    // KODE GRAFIK CHART.JS 
+    // ==========================================
+    const ctx = document.getElementById('keuanganChart');
+    if (ctx) {
+        // Hancurkan grafik lama jika sudah ada agar tidak menumpuk saat refresh
+        if (grafikKeuangan) {
+            grafikKeuangan.destroy();
+        }
+
+        // Gambar grafik baru
+        grafikKeuangan = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Kas Masuk (Aman)', 'Sisa Piutang (Tagihan)'],
+                datasets: [{
+                    data: [totalPendapatan, totalPiutang],
+                    backgroundColor: [
+                        '#198754', // Hijau untuk Kas
+                        '#dc3545'  // Merah untuk Piutang
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: { family: "'Poppins', sans-serif" }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(context.parsed);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 
 function renderPelanggan() {
