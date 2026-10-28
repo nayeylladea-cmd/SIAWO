@@ -681,26 +681,6 @@ async function savePaket(event) {
     }
 }
 
-async function saveTransaksi(event) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const id = ambilID(form, "id_transaksi");
-    const payload = dataForm(form, ["id_pelanggan", "id_paket", "tanggal_transaksi", "tanggal_acara", "total_transaksi", "status"]);
-    if (payload.total_transaksi !== undefined) payload.total_transaksi = angka(payload.total_transaksi);
-
-    try {
-        if (id) await supabaseRequest("transaksi_wedding", { method: "PATCH", filters: { id_transaksi: `eq.${id}` }, body: payload });
-        else await supabaseRequest("transaksi_wedding", { method: "POST", body: payload });
-
-        resetForm("form-transaksi");
-        tampilkanForm("form-transaksi", false);
-        await loadAllData();
-        tampilkanPesan("Transaksi berhasil disimpan.");
-    } catch (error) {
-        tampilkanPesan("Gagal menyimpan transaksi: " + error.message, "error");
-    }
-}
-
 async function savePembayaran(event) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -725,22 +705,21 @@ async function savePembayaran(event) {
         const transaksiData = state.transaksi.find(t => String(t.id_transaksi) === String(idTransaksiTerkait));
         
         if (transaksiData) {
-            // Hitung total tagihan dan total pembayaran sementara (termasuk pembayaran baru ini)
             const totalTagihan = angka(transaksiData.total_transaksi);
             
-            // Ambil pembayaran lama lalu tambahkan jumlah bayar yang baru diinput
+            // Hitung total keseluruhan pembayaran untuk transaksi ini
             const pembayaranLama = state.pembayaran
                 .filter(p => String(p.id_transaksi) === String(idTransaksiTerkait) && String(p.id_pembayaran) !== String(id))
                 .reduce((sum, p) => sum + angka(p.jumlah_bayar), 0);
             
             const totalSudahDibayar = pembayaranLama + angka(payload.jumlah_bayar);
 
-            // Tentukan status otomatis berdasarkan sisa tagihan
+            // Tentukan status otomatis berdasarkan jumlah yang sudah dibayar
             let statusBaru = transaksiData.status;
             if (totalSudahDibayar >= totalTagihan) {
                 statusBaru = "Lunas";
             } else if (totalSudahDibayar > 0) {
-                statusBaru = "Berlangsung"; // Status berubah otomatis jika sudah dicicil
+                statusBaru = "Berlangsung"; // Berubah otomatis jadi Berlangsung karena sudah dicicil/DP
             }
 
             // Kirim perintah update status otomatis ke tabel transaksi_wedding di Supabase
