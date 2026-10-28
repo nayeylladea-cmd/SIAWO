@@ -199,47 +199,43 @@ button {
 .page.active {
     display: block;
 }
-
 .welcome-banner {
     position: relative;
-    overflow: hidden;
+    background: linear-gradient(135deg, rgba(184, 94, 123, 0.85), rgba(44, 160, 104, 0.85)), 
+                url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+    color: var(--white);
+    padding: 35px 40px;
+    border-radius: 16px;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 20px;
-    min-height: 210px;
-    padding: 35px 38px;
+    align-items: center;
+    box-shadow: 0 10px 25px rgba(184, 94, 123, 0.2);
+    overflow: hidden;
     margin-bottom: 25px;
-    border-radius: 18px;
-    color: #75465a;
-    background: linear-gradient(115deg, #f9e2e9 0%, #fff0f3 57%, #f4dce5 100%);
 }
 
 .welcome-banner .eyebrow {
-    color: #b36e86;
+    color: #fce7ec;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
 }
 
 .welcome-banner h2 {
-    max-width: 500px;
-    margin: 10px 0;
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(25px, 3vw, 36px);
-    line-height: 1.25;
-    font-weight: 500;
+    color: var(--white);
+    font-size: 26px;
+    margin-bottom: 8px;
 }
 
-.welcome-banner p:not(.eyebrow) {
-    max-width: 520px;
-    font-size: 12px;
-    color: #8d6876;
+.welcome-banner p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
 }
 
-.banner-decoration {
-    font-family: 'Playfair Display', serif;
-    font-size: 115px;
-    line-height: 1;
-    color: rgba(184, 94, 123, 0.2);
-    padding: 0 25px;
+.welcome-banner .banner-decoration {
+    font-size: 50px;
+    color: rgba(255, 255, 255, 0.3);
+    font-weight: 300;
 }
 
 .stats-grid {
