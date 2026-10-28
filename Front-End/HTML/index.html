@@ -131,7 +131,7 @@
                     </article>
                 </div>
 
-                <!-- DIAGRAM RINGKASAN PIUTANG -->
+<!-- 1. DIAGRAM RINGKASAN PIUTANG -->
                 <div class="content-card receivable-chart-card">
                     <div class="section-heading">
                         <div>
@@ -173,6 +173,15 @@
                     </div>
                 </div>
 
+                <!-- 2. KARTU GRAFIK CHART.JS (DI LUAR KARTU LAIN) -->
+                <div class="content-card" style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px; font-size: 16px; color: var(--text-dark); text-align: center;">Visualisasi Komposisi Pendapatan</h3>
+                    <div style="width: 100%; max-width: 300px; margin: 0 auto; padding: 10px;">
+                        <canvas id="keuanganChart"></canvas>
+                    </div>
+                </div> 
+
+                <!-- 3. KARTU SELAMAT DATANG (DI LUAR KARTU LAIN) -->
                 <div class="content-card">
                     <div class="section-heading">
                         <div>
@@ -190,20 +199,7 @@
                         </button>
                     </div>
                 </div>
-            </section>
-
-            <section id="pelanggan-page" class="page">
-                <div class="content-card">
-                    <div class="section-heading">
-                        <div>
-                            <h2>Data Pelanggan</h2>
-                            <p>Kelola informasi pelanggan wedding organizer.</p>
-                        </div>
-                        <button class="primary-button" id="tambah-pelanggan" type="button">
-                            + Tambah Pelanggan
-                        </button>
-                    </div>
-
+                
                     <!-- KOTAK PENCARIAN PELANGGAN -->
                     <div style="margin-bottom: 20px;">
                         <input type="text" id="search-pelanggan" placeholder="🔍 Cari nama pelanggan, telepon, atau email..." style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; background: var(--white);">
