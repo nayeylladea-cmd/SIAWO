@@ -79,33 +79,26 @@
                     <div class="banner-decoration">♡</div>
                 </div>
 
-                <div class="stats-grid">
-                    <article class="stat-card">
-                        <p>Total Pelanggan</p>
-                        <h3 id="total-pelanggan">0</h3>
-                        <span>Data pelanggan terdaftar</span>
-                    </article>
-                    <article class="stat-card">
-                        <p>Total Paket</p>
-                        <h3 id="total-paket">0</h3>
-                        <span>Paket wedding tersedia</span>
-                    </article>
-                    <article class="stat-card">
-                        <p>Total Transaksi</p>
-                        <h3 id="total-transaksi">0</h3>
-                        <span>Transaksi tercatat</span>
-                    </article>
-                    <article class="stat-card">
-                        <p>Total Pendapatan</p>
-                        <h3 id="total-pendapatan">Rp0</h3>
-                        <span>Total pembayaran masuk</span>
-                    </article>
-                    <article class="stat-card">
-                        <p>Total Piutang</p>
-                        <h3 id="total-piutang">Rp0</h3>
-                        <span>Sisa tagihan pelanggan</span>
-                    </article>
-                </div>
+                <!-- KARTU HIGHLIGHT PIUTANG (DIUPDATE DENGAN NILAI REALISASI BERSIH) -->
+                    <div class="stats-grid" style="margin-bottom: 25px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                        <article class="stat-card" style="background: #fffbeb; border-color: #f6e05e; border-left: 4px solid #d69e2e;">
+                            <p style="color: #975a16; font-weight: 600;">Total Piutang (Kotor)</p>
+                            <h3 id="summary-total-piutang" style="color: #b7791f; font-size: 24px;">Rp0</h3>
+                            <span id="summary-orang-piutang" style="color: #975a16;">0 Transaksi</span>
+                        </article>
+                        
+                        <article class="stat-card" style="background: var(--pink-soft); border-color: var(--pink-light); border-left: 4px solid var(--pink);">
+                            <p style="color: var(--pink-dark); font-weight: 600;">Penyisihan (Kerugian)</p>
+                            <h3 id="summary-penyisihan" style="color: #b85e7b; font-size: 24px;">Rp0</h3>
+                            <span style="color: #d9829b;">Berdasarkan umur tunggakan</span>
+                        </article>
+
+                        <article class="stat-card" style="background: #f0fdf4; border-color: #c6f6d5; border-left: 4px solid #2ca068;">
+                            <p style="color: #22543d; font-weight: 600;">Nilai Realisasi Bersih</p>
+                            <h3 id="summary-piutang-bersih" style="color: #2ca068; font-size: 24px;">Rp0</h3>
+                            <span style="color: #2ca068;">Uang yang realistis ditagih</span>
+                        </article>
+                    </div>
 
                 <!-- 1. DIAGRAM RINGKASAN PIUTANG -->
                 <div class="content-card receivable-chart-card">
