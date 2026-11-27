@@ -7,12 +7,14 @@
 
 const SUPABASE_URL = "https://kkuwqdluicotbzgdmfjk.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Cs1-1HixNDSvTVVJyfp32Q_o1e94vZn";
+const STORAGE_JURNAL_MANUAL = "siawo_jurnal_manual_v1";
 
 const state = {
     pelanggan: [],
     paket: [],
     transaksi: [],
-    pembayaran: []
+    pembayaran: [],
+    jurnalManual: []
 };
 
 let sedangMemuat = false;
@@ -52,6 +54,24 @@ function tanggalIndonesia(nilai) {
         month: "short",
         year: "numeric"
     });
+}
+
+function loadJurnalManual() {
+    try {
+        const raw = localStorage.getItem(STORAGE_JURNAL_MANUAL);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function simpanJurnalManualStorage() {
+    try {
+        localStorage.setItem(STORAGE_JURNAL_MANUAL, JSON.stringify(state.jurnalManual));
+    } catch (error) {
+        console.error("Gagal menyimpan jurnal manual ke storage:", error);
+    }
 }
 
 function tampilkanPesan(pesan, jenis = "success") {
@@ -129,7 +149,7 @@ async function supabaseRequest(tabel, opsi = {}) {
     const respons = await fetch(url, {
         method,
         headers,
-        cache: "no-store", 
+        cache: "no-store",
         ...(body !== null ? { body: JSON.stringify(body) } : {})
     });
 
@@ -168,6 +188,7 @@ async function loadAllData() {
         state.paket = getRows(paket);
         state.transaksi = getRows(transaksi);
         state.pembayaran = getRows(pembayaran);
+        state.jurnalManual = loadJurnalManual();
 
         renderAll();
     } catch (error) {
@@ -203,7 +224,7 @@ function getPiutang(transaksi) {
 function badgeStatus(status) {
     const aman = escapeHTML(status || "-");
     let warna = "#b7791f"; // Default kuning
-    
+
     if (String(status).toLowerCase() === "lunas") {
         warna = "#198754"; // Hijau
     } else if (String(status).toLowerCase() === "menunggu pembayaran" || String(status).toLowerCase() === "pending") {
@@ -226,6 +247,189 @@ function setIsiTabel(id, html, colspan = 1) {
     const tabel = document.getElementById(id);
     if (!tabel) return;
     tabel.innerHTML = html || `<tr><td colspan="${colspan}" style="text-align:center;padding:20px">Belum ada data.</td></tr>`;
+}
+
+/* =========================================
+   LOGIKA JURNAL UMUM OTOMATIS & MANUAL
+========================================= */
+function buildDaftarJurnal() {
+    const entri = [];
+
+    // 1. Jurnal dari Transaksi Wedding (Kontrak / Piutang vs Pendapatan Jasa)
+    state.transaksi.forEach((trx, index) => {
+        const nominal = angka(trx.total_transaksi);
+        if (nominal <= 0) return;
+
+        const namaPelanggan = getNamaPelanggan(trx.id_pelanggan);
+        const namaPaket = getNamaPaket(trx.id_paket);
+        const tanggal = trx.tanggal_transaksi || trx.tanggal_acara || "";
+        const ref = `TRX-${trx.id_transaksi ?? index + 1}`;
+        const uraian = `Kontrak paket ${namaPaket} - ${namaPelanggan}`;
+
+        entri.push({
+            tanggal,
+            ref,
+            jenis: "transaksi",
+            akunDebit: "Piutang Usaha",
+            akunKredit: "Pendapatan Jasa Wedding",
+            nominal,
+            keterangan: uraian,
+            isManual: false
+        });
+    });
+
+    // 2. Jurnal dari Pembayaran Masuk (Kas vs Piutang Usaha)
+    state.pembayaran.forEach((byr, index) => {
+        const nominal = angka(byr.jumlah_bayar);
+        if (nominal <= 0) return;
+
+        const trx = state.transaksi.find(t => String(t.id_transaksi) === String(byr.id_transaksi));
+        const namaPelanggan = trx ? getNamaPelanggan(trx.id_pelanggan) : "-";
+        const tanggal = byr.tanggal_pembayaran || "";
+        const ref = `BYR-${byr.id_pembayaran ?? byr.id_transaksi ?? index + 1}`;
+        const ketTambahan = byr.keterangan ? ` (${byr.keterangan})` : "";
+        const uraian = `Penerimaan pembayaran via ${byr.metode_pembayaran || "-"} - ${namaPelanggan}${ketTambahan}`;
+
+        entri.push({
+            tanggal,
+            ref,
+            jenis: "pembayaran",
+            akunDebit: "Kas",
+            akunKredit: "Piutang Usaha",
+            nominal,
+            keterangan: uraian,
+            isManual: false
+        });
+    });
+
+    // 3. Jurnal Manual / Penyesuaian
+    state.jurnalManual.forEach((jrn, index) => {
+        const nominal = angka(jrn.nominal_jurnal);
+        if (nominal <= 0) return;
+
+        entri.push({
+            idManual: jrn.id_jurnal,
+            tanggal: jrn.tanggal_jurnal || "",
+            ref: jrn.no_referensi || `JRN-${index + 1}`,
+            jenis: "manual",
+            akunDebit: jrn.akun_debit || "Akun Debit",
+            akunKredit: jrn.akun_kredit || "Akun Kredit",
+            nominal,
+            keterangan: jrn.keterangan_jurnal || "-",
+            isManual: true
+        });
+    });
+
+    // Urutkan berdasarkan tanggal (terbaru di atas)
+    entri.sort((a, b) => String(b.tanggal || "").localeCompare(String(a.tanggal || "")));
+    return entri;
+}
+
+function renderJurnal() {
+    const semuaJurnal = buildDaftarJurnal();
+    const keyword = (document.getElementById("search-jurnal")?.value || "").toLowerCase().trim();
+    const filterJenis = document.getElementById("filter-jenis-jurnal")?.value || "all";
+
+    const difilter = semuaJurnal.filter(item => {
+        const cocokJenis = filterJenis === "all" || item.jenis === filterJenis;
+        const teksGabung = `${item.ref} ${item.akunDebit} ${item.akunKredit} ${item.keterangan}`.toLowerCase();
+        const cocokKata = !keyword || teksGabung.includes(keyword);
+        return cocokJenis && cocokKata;
+    });
+
+    let totalDebit = 0;
+    let totalKredit = 0;
+
+    const rowsHTML = difilter.map(item => {
+        totalDebit += item.nominal;
+        totalKredit += item.nominal;
+
+        const badgeSumber = item.jenis === "transaksi"
+            ? `<span style="font-size:10px; padding:2px 7px; border-radius:10px; background:#eff6ff; color:#1d4ed8; font-weight:600;">Transaksi</span>`
+            : item.jenis === "pembayaran"
+                ? `<span style="font-size:10px; padding:2px 7px; border-radius:10px; background:#f0fdf4; color:#198754; font-weight:600;">Pembayaran</span>`
+                : `<span style="font-size:10px; padding:2px 7px; border-radius:10px; background:#fdf2f8; color:#be185d; font-weight:600;">Manual</span>`;
+
+        const tombolHapusManual = item.isManual
+            ? `<button type="button" data-delete-jurnal="${escapeHTML(item.idManual)}" style="margin-left:8px; padding:2px 8px; font-size:11px; cursor:pointer;">Hapus</button>`
+            : "";
+
+        return `
+            <tr>
+                <td style="white-space:nowrap;">${tanggalIndonesia(item.tanggal)}</td>
+                <td style="white-space:nowrap;"><strong>${escapeHTML(item.ref)}</strong><br>${badgeSumber}</td>
+                <td>
+                    <div><strong>${escapeHTML(item.akunDebit)}</strong></div>
+                    <div style="padding-left:24px; color:#555;">${escapeHTML(item.akunKredit)}</div>
+                    <div style="font-size:11px; color:var(--muted); margin-top:3px;">
+                        <em>${escapeHTML(item.keterangan)}</em>${tombolHapusManual}
+                    </div>
+                </td>
+                <td style="text-align:right; vertical-align:top; font-weight:600; color:#1d4ed8;">
+                    <div>${rupiah(item.nominal)}</div>
+                    <div style="color:transparent;">-</div>
+                </td>
+                <td style="text-align:right; vertical-align:top; font-weight:600; color:#be185d;">
+                    <div style="color:transparent;">-</div>
+                    <div>${rupiah(item.nominal)}</div>
+                </td>
+            </tr>
+        `;
+    }).join("");
+
+    setIsiTabel("tabel-jurnal", rowsHTML, 5);
+
+    const selisih = Math.abs(totalDebit - totalKredit);
+    const elDebit = document.getElementById("jurnal-total-debit");
+    const elKredit = document.getElementById("jurnal-total-kredit");
+    const elStatus = document.getElementById("jurnal-status-balance");
+    const elSelisih = document.getElementById("jurnal-selisih");
+
+    if (elDebit) elDebit.textContent = rupiah(totalDebit);
+    if (elKredit) elKredit.textContent = rupiah(totalKredit);
+    if (elStatus) {
+        elStatus.textContent = selisih === 0 ? "Seimbang (Balance)" : "Tidak Seimbang";
+        elStatus.style.color = selisih === 0 ? "#2ca068" : "#dc3545";
+    }
+    if (elSelisih) elSelisih.textContent = `Selisih: ${rupiah(selisih)}`;
+}
+
+async function saveJurnalManual(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const payload = dataForm(form, [
+        "tanggal_jurnal",
+        "no_referensi",
+        "akun_debit",
+        "akun_kredit",
+        "nominal_jurnal",
+        "keterangan_jurnal"
+    ]);
+
+    payload.nominal_jurnal = angka(payload.nominal_jurnal);
+    if (payload.nominal_jurnal <= 0) {
+        tampilkanPesan("Nominal jurnal harus lebih dari 0.", "error");
+        return;
+    }
+
+    state.jurnalManual.push({
+        id_jurnal: "JRN-" + Date.now(),
+        ...payload
+    });
+
+    simpanJurnalManualStorage();
+    resetForm("form-jurnal");
+    tampilkanForm("form-jurnal", false);
+    renderJurnal();
+    tampilkanPesan("Jurnal manual berhasil dicatat.");
+}
+
+function deleteJurnalManual(idJurnal) {
+    if (!confirm("Yakin ingin menghapus entri jurnal manual ini?")) return;
+    state.jurnalManual = state.jurnalManual.filter(item => String(item.id_jurnal) !== String(idJurnal));
+    simpanJurnalManualStorage();
+    renderJurnal();
+    tampilkanPesan("Entri jurnal manual dihapus.");
 }
 
 function renderDashboard() {
@@ -264,7 +468,7 @@ function renderDashboard() {
     });
 
     // ==========================================
-    // KODE GRAFIK CHART.JS 
+    // KODE GRAFIK CHART.JS
     // ==========================================
     const ctx = document.getElementById('keuanganChart');
     if (ctx) {
@@ -318,8 +522,8 @@ function renderDashboard() {
 
 function renderPelanggan() {
     const keyword = document.getElementById("search-pelanggan")?.value.toLowerCase() || "";
-    
-    const filteredData = state.pelanggan.filter(item => 
+
+    const filteredData = state.pelanggan.filter(item =>
         (item.nama_pelanggan || "").toLowerCase().includes(keyword) ||
         (item.no_telepon || "").toLowerCase().includes(keyword) ||
         (item.email || "").toLowerCase().includes(keyword)
@@ -389,14 +593,14 @@ function renderPembayaran() {
             </tr>
         `;
     }).join("");
-    
-    setIsiTabel("tabel-pembayaran", html, 7); 
+
+    setIsiTabel("tabel-pembayaran", html, 7);
 }
 
 function renderPiutang() {
     let totalSeluruhPiutang = 0;
     let transaksiBerhutang = 0;
-    let totalPenyisihan = 0; 
+    let totalPenyisihan = 0;
 
     const keyword = document.getElementById("search-piutang")?.value.toLowerCase() || "";
 
@@ -417,7 +621,7 @@ function renderPiutang() {
         }
 
         const persen = totalTagihan > 0 ? Math.min((totalBayar / totalTagihan) * 100, 100) : 0;
-        
+
         const tanggalAcara = new Date(item.tanggal_acara);
         const hariIni = new Date();
         hariIni.setHours(0, 0, 0, 0);
@@ -426,7 +630,7 @@ function renderPiutang() {
         let statusPiutang = "";
         let warnaStatus = "";
         let warnaTeksSisa = "#2ca068";
-        let nilaiPenyisihan = 0; 
+        let nilaiPenyisihan = 0;
 
         if (sisa <= 0) {
             statusPiutang = "LUNAS";
@@ -439,13 +643,13 @@ function renderPiutang() {
             if (selisihHari > 0) {
                 statusPiutang = `JATUH TEMPO (${selisihHari} Hari)`;
                 warnaStatus = "#dc3545";
-                
+
                 if (selisihHari <= 30) {
-                    nilaiPenyisihan = sisa * 0.05; 
+                    nilaiPenyisihan = sisa * 0.05;
                 } else if (selisihHari <= 60) {
-                    nilaiPenyisihan = sisa * 0.10; 
+                    nilaiPenyisihan = sisa * 0.10;
                 } else {
-                    nilaiPenyisihan = sisa * 0.20; 
+                    nilaiPenyisihan = sisa * 0.20;
                 }
             } else if (selisihHari === 0) {
                 statusPiutang = `HARI H ACARA!`;
@@ -455,18 +659,18 @@ function renderPiutang() {
                 warnaStatus = "#b7791f";
             }
         }
-        
+
         totalPenyisihan += nilaiPenyisihan;
 
         const badgeJatuhTempo = `<span style="display:inline-block; padding:4px 8px; border-radius:6px; background:${warnaStatus}15; color:${warnaStatus}; font-size:10px; font-weight:700; border: 1px solid ${warnaStatus}40; margin-bottom: 5px;">${statusPiutang}</span>`;
-        
+
         let infoPenyisihan = "";
         if (nilaiPenyisihan > 0) {
             infoPenyisihan = `<div style="font-size:10px; color:var(--pink-dark); margin-top:4px;">⚠️ Risiko Tak Tertagih: <br>${rupiah(nilaiPenyisihan)}</div>`;
         }
 
         const dataPelanggan = state.pelanggan.find(p => String(p.id_pelanggan) === String(item.id_pelanggan));
-        
+
         let tombolWA = "";
         if (sisa > 0 && dataPelanggan && dataPelanggan.no_telepon) {
             const noWA = dataPelanggan.no_telepon.replace(/[^0-9]/g, '').replace(/^0/, '62');
@@ -550,8 +754,9 @@ function renderAll() {
     renderPaket();
     renderTransaksi();
     renderPembayaran();
+    renderJurnal();
     renderPiutang();
-    renderLaporan(); 
+    renderLaporan();
     renderPilihanDropdown();
 }
 
@@ -564,14 +769,15 @@ function showPage(namaHalaman) {
         tombol.classList.toggle("active", tombol.dataset.page === namaHalaman);
     });
 
-    const judul = { 
-        dashboard: "Dashboard", 
-        pelanggan: "Data Pelanggan", 
-        paket: "Paket Wedding", 
-        transaksi: "Transaksi Wedding", 
-        pembayaran: "Pembayaran", 
+    const judul = {
+        dashboard: "Dashboard",
+        pelanggan: "Data Pelanggan",
+        paket: "Paket Wedding",
+        transaksi: "Transaksi Wedding",
+        pembayaran: "Pembayaran",
+        jurnal: "Jurnal Umum",
         piutang: "Piutang",
-        laporan: "Laporan Keuangan" 
+        laporan: "Laporan Keuangan"
     };
     const elemenJudul = document.getElementById("page-title");
     if (elemenJudul) elemenJudul.textContent = judul[namaHalaman] || "SIAWO";
@@ -672,7 +878,6 @@ async function savePaket(event) {
     }
 }
 
-// INI FUNGSI YANG TADI HILANG DAN MEMBUAT LAYAR KOSONG:
 async function saveTransaksi(event) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -710,21 +915,21 @@ async function savePembayaran(event) {
         // OTOMATISASI STATUS TRANSAKSI
         const idTransaksiTerkait = payload.id_transaksi;
         const transaksiData = state.transaksi.find(t => String(t.id_transaksi) === String(idTransaksiTerkait));
-        
+
         if (transaksiData) {
             const totalTagihan = angka(transaksiData.total_transaksi);
-            
+
             const pembayaranLama = state.pembayaran
                 .filter(p => String(p.id_transaksi) === String(idTransaksiTerkait) && String(p.id_pembayaran) !== String(id))
                 .reduce((sum, p) => sum + angka(p.jumlah_bayar), 0);
-            
+
             const totalSudahDibayar = pembayaranLama + angka(payload.jumlah_bayar);
 
             let statusBaru = transaksiData.status;
             if (totalSudahDibayar >= totalTagihan) {
                 statusBaru = "Lunas";
             } else if (totalSudahDibayar > 0) {
-                statusBaru = "Berlangsung"; 
+                statusBaru = "Berlangsung";
             }
 
             await supabaseRequest("transaksi_wedding", {
@@ -820,6 +1025,16 @@ function setupSearch() {
     if (inputPiutang) {
         inputPiutang.addEventListener("input", renderPiutang);
     }
+
+    const inputJurnal = document.getElementById("search-jurnal");
+    if (inputJurnal) {
+        inputJurnal.addEventListener("input", renderJurnal);
+    }
+
+    const filterJenisJurnal = document.getElementById("filter-jenis-jurnal");
+    if (filterJenisJurnal) {
+        filterJenisJurnal.addEventListener("change", renderJurnal);
+    }
 }
 
 function setupForms() {
@@ -827,7 +1042,8 @@ function setupForms() {
         ["form-pelanggan", savePelanggan],
         ["form-paket", savePaket],
         ["form-transaksi", saveTransaksi],
-        ["form-pembayaran", savePembayaran]
+        ["form-pembayaran", savePembayaran],
+        ["form-jurnal", saveJurnalManual]
     ];
     konfigurasiForm.forEach(([id, handler]) => {
         const form = document.getElementById(id);
@@ -843,6 +1059,14 @@ function setupForms() {
             });
         }
     });
+
+    const tombolJurnalManual = document.getElementById("tambah-jurnal-manual");
+    if (tombolJurnalManual) {
+        tombolJurnalManual.addEventListener("click", () => {
+            resetForm("form-jurnal");
+            tampilkanForm("form-jurnal", true);
+        });
+    }
 
     document.querySelectorAll("[data-cancel], [data-close]").forEach(tombol => {
         tombol.addEventListener("click", () => {
@@ -862,6 +1086,7 @@ function setupTableActions() {
     document.addEventListener("click", event => {
         const tombolEdit = event.target.closest("[data-edit]");
         const tombolHapus = event.target.closest("[data-delete]");
+        const tombolHapusJurnal = event.target.closest("[data-delete-jurnal]");
 
         if (tombolEdit) {
             const jenis = tombolEdit.dataset.edit;
@@ -870,6 +1095,7 @@ function setupTableActions() {
             if (fungsiEdit[jenis]) fungsiEdit[jenis](id);
         }
         if (tombolHapus) deleteRecord(tombolHapus.dataset.delete, tombolHapus.dataset.id);
+        if (tombolHapusJurnal) deleteJurnalManual(tombolHapusJurnal.dataset.deleteJurnal);
     });
 }
 
@@ -877,7 +1103,7 @@ async function initializeApp() {
     setupNavigation();
     setupForms();
     setupTableActions();
-    setupSearch(); 
+    setupSearch();
     showPage("dashboard");
     await loadAllData();
 }
@@ -891,10 +1117,10 @@ const btnLogout = document.getElementById('btn-logout');
 
 if (btnLogout) {
     btnLogout.addEventListener('click', function(e) {
-        e.preventDefault(); 
-        
+        e.preventDefault();
+
         const konfirmasi = confirm("Apakah Anda yakin ingin keluar dari sistem SIAWO?");
-        
+
         if (konfirmasi) {
             window.location.href = 'login.html';
         }
