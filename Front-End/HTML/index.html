@@ -32,6 +32,7 @@
                 <a href="#paket" class="nav-link" data-page="paket"><i class="fa-solid fa-gem"></i> Paket Wedding</a>
                 <a href="#transaksi" class="nav-link" data-page="transaksi"><i class="fa-solid fa-file-invoice-dollar"></i> Transaksi Wedding</a>
                 <a href="#pembayaran" class="nav-link" data-page="pembayaran"><i class="fa-solid fa-money-bill-transfer"></i> Pembayaran</a>
+                <a href="#jurnal" class="nav-link" data-page="jurnal"><i class="fa-solid fa-book-open"></i> Jurnal Umum</a>
                 <a href="#piutang" class="nav-link" data-page="piutang"><i class="fa-solid fa-wallet"></i> Piutang</a>
                 <a href="#laporan" class="nav-link" data-page="laporan"><i class="fa-solid fa-file-invoice"></i> Laporan Keuangan</a>
                 
@@ -66,7 +67,7 @@
                 </div>
             </header>
 
-        <!-- ============================== -->
+            <!-- ============================== -->
             <!-- HALAMAN DASHBOARD              -->
             <!-- ============================== -->
             <section id="dashboard-page" class="page active">
@@ -208,13 +209,11 @@
                 </div>
             </section>
 
-    <!-- ============================== -->
+            <!-- ============================== -->
             <!-- HALAMAN PAKET WEDDING          -->
             <!-- ============================== -->
             <section id="paket-page" class="page">
                 <div class="content-card">
-                    
-                    <!-- Judul Halaman Tanpa Tombol Tambah -->
                     <div class="section-heading">
                         <div>
                             <h2>Paket Wedding</h2>
@@ -222,7 +221,6 @@
                         </div>
                     </div>
                     
-                    <!-- Form Edit Paket (Tetap Disembunyikan) -->
                     <form id="form-paket" class="data-form hidden">
                         <input type="hidden" name="id_paket">
                         <div class="form-grid">
@@ -236,11 +234,10 @@
                         </div>
                     </form>
                     
-                    <!-- Tempat Kartu Paket Ditampilkan -->
                     <div class="paket-grid" id="paket-grid-container"></div>
-                    
                 </div>
             </section>
+
             <!-- ============================== -->
             <!-- HALAMAN TRANSAKSI WEDDING      -->
             <!-- ============================== -->
@@ -341,7 +338,88 @@
                 </div>
             </section>
 
-<!-- ============================== -->
+            <!-- ============================== -->
+            <!-- HALAMAN JURNAL UMUM           -->
+            <!-- ============================== -->
+            <section id="jurnal-page" class="page">
+                <div class="content-card">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Jurnal Umum</h2>
+                            <p>Catatan ayat jurnal otomatis dari transaksi kontrak, penerimaan pembayaran, dan penyesuaian piutang.</p>
+                        </div>
+                        <button class="primary-button" id="tambah-jurnal-manual" type="button">+ Jurnal Manual / Penyesuaian</button>
+                    </div>
+
+                    <!-- RINGKASAN KESEIMBANGAN DEBIT & KREDIT -->
+                    <div class="stats-grid" style="margin-bottom: 20px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                        <article class="stat-card" style="background: #eff6ff; border-color: #bfdbfe; border-left: 4px solid #3b82f6;">
+                            <p style="color: #1e40af; font-weight: 600;">Total Debit</p>
+                            <h3 id="jurnal-total-debit" style="color: #1d4ed8; font-size: 22px;">Rp0</h3>
+                            <span>Akumulasi posisi debit</span>
+                        </article>
+                        <article class="stat-card" style="background: #fdf2f8; border-color: #fbcfe8; border-left: 4px solid #ec4899;">
+                            <p style="color: #9d174d; font-weight: 600;">Total Kredit</p>
+                            <h3 id="jurnal-total-kredit" style="color: #be185d; font-size: 22px;">Rp0</h3>
+                            <span>Akumulasi posisi kredit</span>
+                        </article>
+                        <article class="stat-card" style="background: #f0fdf4; border-color: #c6f6d5; border-left: 4px solid #2ca068;">
+                            <p style="color: #22543d; font-weight: 600;">Status Keseimbangan</p>
+                            <h3 id="jurnal-status-balance" style="color: #2ca068; font-size: 20px;">Seimbang (Balance)</h3>
+                            <span id="jurnal-selisih">Selisih: Rp0</span>
+                        </article>
+                    </div>
+
+                    <!-- FORM JURNAL MANUAL / PENYESUAIAN (OPSIONAL) -->
+                    <form id="form-jurnal" class="data-form hidden">
+                        <input type="hidden" name="id_jurnal">
+                        <div class="form-grid">
+                            <label>Tanggal jurnal<input name="tanggal_jurnal" type="date" required></label>
+                            <label>No. Referensi / Bukti<input name="no_referensi" placeholder="Contoh: JRN-001 / ADJ-01"></label>
+                            <label>Akun Debit<input name="akun_debit" required placeholder="Contoh: Beban Kerugian Piutang"></label>
+                            <label>Akun Kredit<input name="akun_kredit" required placeholder="Contoh: Cadangan Kerugian Piutang"></label>
+                            <label>Nominal (Rp)<input name="nominal_jurnal" type="number" min="1" required placeholder="Contoh: 1500000"></label>
+                            <label>Keterangan<input name="keterangan_jurnal" required placeholder="Uraian singkat pencatatan jurnal"></label>
+                        </div>
+                        <div class="form-actions">
+                            <button class="primary-button" type="submit">Simpan Jurnal</button>
+                            <button class="secondary-button" type="button" data-cancel="jurnal">Batal</button>
+                        </div>
+                    </form>
+
+                    <!-- FILTER PENCARIAN & KATEGORI JURNAL -->
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
+                        <input type="text" id="search-jurnal" placeholder="🔍 Cari nama akun, no. referensi, atau keterangan..." style="flex: 1; min-width: 240px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; background: var(--white);">
+                        <select id="filter-jenis-jurnal" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; background: var(--white);">
+                            <option value="all">Semua Sumber Jurnal</option>
+                            <option value="transaksi">Transaksi Wedding</option>
+                            <option value="pembayaran">Pembayaran Masuk</option>
+                            <option value="manual">Jurnal Manual / Penyesuaian</option>
+                        </select>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th>Ref</th>
+                                    <th>Nama Akun & Keterangan</th>
+                                    <th style="text-align: right;">Debit (Rp)</th>
+                                    <th style="text-align: right;">Kredit (Rp)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-jurnal">
+                                <tr>
+                                    <td colspan="5" style="text-align:center; padding: 20px;">Memuat data jurnal umum...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================== -->
             <!-- HALAMAN PIUTANG                -->
             <!-- ============================== -->
             <section id="piutang-page" class="page">
@@ -404,11 +482,10 @@
                 </div>
             </section>
             
-        <!-- ============================== -->
+            <!-- ============================== -->
             <!-- HALAMAN LAPORAN KEUANGAN       -->
             <!-- ============================== -->
             <section id="laporan-page" class="page">
-     <style>
                 <style>
                     /* 1. GAYA KHUSUS SAAT DILIHAT DI LAYAR WEB */
                     @media screen {
@@ -453,6 +530,7 @@
                         #piutang-page.active table a { display: none !important; }
                     }
                 </style>
+
                 <!-- HEADER WEB (Hilang saat diprint) -->
                 <div class="content-card no-print" style="margin-bottom: 20px;">
                     <div class="section-heading" style="border-bottom: none; margin-bottom: 0;">
@@ -536,7 +614,7 @@
                     </div>
                 </div>
             </section>
-            </main> <!-- Penutup main-content -->
+        </main> <!-- Penutup main-content -->
     </div> <!-- Penutup app-container -->
 
     <!-- ============================== -->
@@ -551,4 +629,3 @@
 
 </body>
 </html>
-            
