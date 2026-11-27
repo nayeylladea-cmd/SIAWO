@@ -1,20 +1,22 @@
 "use strict";
 
 /* =========================================
-   SIAWO - SISTEM AKUNTANSI WEDDING ORGANIZER
-   Frontend JavaScript + Supabase
+   SIAWO - SISTEM INFORMASI AKUNTANSI WEDDING ORGANIZER
+   Frontend JavaScript + Supabase + Standar Akuntansi (SAK EMKM)
    ========================================= */
 
 const SUPABASE_URL = "https://kkuwqdluicotbzgdmfjk.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Cs1-1HixNDSvTVVJyfp32Q_o1e94vZn";
 const STORAGE_JURNAL_MANUAL = "siawo_jurnal_manual_v1";
+const STORAGE_MODAL_AWAL = "siawo_modal_awal_v1";
 
 const state = {
     pelanggan: [],
     paket: [],
     transaksi: [],
     pembayaran: [],
-    jurnalManual: []
+    jurnalManual: [],
+    modalAwal: 0
 };
 
 let sedangMemuat = false;
@@ -31,6 +33,11 @@ function rupiah(nilai) {
         currency: "IDR",
         maximumFractionDigits: 0
     }).format(angka(nilai));
+}
+
+function kurungRupiah(nilai) {
+    const val = angka(nilai);
+    return val === 0 ? "Rp0" : `(${rupiah(Math.abs(val))})`;
 }
 
 function escapeHTML(nilai) {
@@ -70,8 +77,18 @@ function simpanJurnalManualStorage() {
     try {
         localStorage.setItem(STORAGE_JURNAL_MANUAL, JSON.stringify(state.jurnalManual));
     } catch (error) {
-        console.error("Gagal menyimpan jurnal manual ke storage:", error);
+        console.error("Gagal menyimpan jurnal manual:", error);
     }
+}
+
+function loadModalAwal() {
+    const raw = localStorage.getItem(STORAGE_MODAL_AWAL);
+    return raw !== null ? angka(raw) : 50000000; // Default Rp50.000.000 agar laporan langsung informatif
+}
+
+function simpanModalAwal(nilai) {
+    state.modalAwal = Math.max(angka(nilai), 0);
+    localStorage.setItem(STORAGE_MODAL_AWAL, String(state.modalAwal));
 }
 
 function tampilkanPesan(pesan, jenis = "success") {
@@ -88,9 +105,10 @@ function tampilkanPesan(pesan, jenis = "success") {
             borderRadius: "12px",
             background: "#ffffff",
             color: "#333333",
-            boxShadow: "0 4px 20px rgba(0,0,0,.12)",
-            maxWidth: "min(360px, calc(100vw - 40px))",
-            fontSize: "14px"
+            boxShadow: "0 4px 20px rgba(0,0,0,.15)",
+            maxWidth: "min(380px, calc(100vw - 40px))",
+            fontSize: "13.5px",
+            fontWeight: "500"
         });
         document.body.appendChild(toast);
     }
@@ -103,10 +121,6 @@ function tampilkanPesan(pesan, jenis = "success") {
     toast.timer = setTimeout(() => {
         toast.style.display = "none";
     }, 3500);
-}
-
-function showToast(pesan, jenis = "success") {
-    tampilkanPesan(pesan, jenis);
 }
 
 function getRows(data) {
@@ -189,6 +203,10 @@ async function loadAllData() {
         state.transaksi = getRows(transaksi);
         state.pembayaran = getRows(pembayaran);
         state.jurnalManual = loadJurnalManual();
+        state.modalAwal = loadModalAwal();
+
+        const inputModal = document.getElementById("input-modal-awal");
+        if (inputModal) inputModal.value = state.modalAwal;
 
         renderAll();
     } catch (error) {
@@ -221,88 +239,179 @@ function getPiutang(transaksi) {
     return Math.max(totalTagihan - totalBayar, 0);
 }
 
-function badgeStatus(status) {
-    const aman = escapeHTML(status || "-");
-    let warna = "#b7791f"; // Default kuning
+function hitungTotalPenyisihanPiutang() {
+    const hariIni = new Date();
+    hariIni.setHours(0, 0, 0, 0);
 
-    if (String(status).toLowerCase() === "lunas") {
-        warna = "#198754"; // Hijau
-    } else if (String(status).toLowerCase() === "menunggu pembayaran" || String(status).toLowerCase() === "pending") {
-        warna = "#d84a5f"; // Merah
-    } else if (String(status).toLowerCase() === "berlangsung termin" || String(status).toLowerCase() === "berlangsung") {
-        warna = "#0d6efd"; // Biru
-    }
+    return state.transaksi.reduce((total, item) => {
+        const sisa = getPiutang(item);
+        if (sisa <= 0 || !item.tanggal_acara) return total;
 
-    return `<span style="display:inline-block; padding:5px 10px; border-radius:20px; background:${warna}18; color:${warna}; font-size:12px; font-weight:600;">${aman}</span>`;
+        const tanggalAcara = new Date(item.tanggal_acara + "T00:00:00");
+        const selisihHari = Math.ceil((hariIni.getTime() - tanggalAcara.getTime()) / (1000 * 3600 * 24));
+
+        if (selisihHari > 0) {
+            if (selisihHari <= 30) return total + sisa * 0.05;
+            if (selisihHari <= 60) return total + sisa * 0.10;
+            return total + sisa * 0.20;
+        }
+        return total;
+    }, 0);
 }
 
-function actionButtons(jenis, id) {
+function badgeStatus(status) {
+    const aman = escapeHTML(status || "-");
+    let warna = "#b7791f";
+
+    if (String(status).toLowerCase() === "lunas") {
+        warna = "#198754";
+    } else if (String(status).toLowerCase() === "menunggu pembayaran" || String(status).toLowerCase() === "pending") {
+        warna = "#d84a5f";
+    } else if (String(status).toLowerCase().includes("berlangsung")) {
+        warna = "#0d6efd";
+    }
+
+    return `<span style="display:inline-block; padding:4px 10px; border-radius:20px; background:${warna}18; color:${warna}; font-size:11.5px; font-weight:700;">${aman}</span>`;
+}
+
+function actionButtons(jenis, id, ekstraHTML = "") {
     return `
-        <button type="button" data-edit="${escapeHTML(jenis)}" data-id="${escapeHTML(id)}">Edit</button>
-        <button type="button" data-delete="${escapeHTML(jenis)}" data-id="${escapeHTML(id)}">Hapus</button>
+        <div class="action-group">
+            ${ekstraHTML}
+            <button type="button" class="btn-sm" data-edit="${escapeHTML(jenis)}" data-id="${escapeHTML(id)}">Edit</button>
+            <button type="button" class="btn-sm btn-danger" data-delete="${escapeHTML(jenis)}" data-id="${escapeHTML(id)}">Hapus</button>
+        </div>
     `;
 }
 
 function setIsiTabel(id, html, colspan = 1) {
     const tabel = document.getElementById(id);
     if (!tabel) return;
-    tabel.innerHTML = html || `<tr><td colspan="${colspan}" style="text-align:center;padding:20px">Belum ada data.</td></tr>`;
+    tabel.innerHTML = html || `<tr><td colspan="${colspan}" style="text-align:center; padding:24px; color:#8c737b;">Belum ada data yang tercatat.</td></tr>`;
 }
 
 /* =========================================
-   LOGIKA JURNAL UMUM OTOMATIS & MANUAL
+   FITUR CETAK INVOICE PELANGGAN
+========================================= */
+function bukaInvoiceModal(idTransaksi) {
+    const trx = state.transaksi.find(t => String(t.id_transaksi) === String(idTransaksi));
+    if (!trx) {
+        tampilkanPesan("Data transaksi tidak ditemukan.", "error");
+        return;
+    }
+
+    const pelanggan = state.pelanggan.find(p => String(p.id_pelanggan) === String(trx.id_pelanggan)) || {};
+    const paket = state.paket.find(pk => String(pk.id_paket) === String(trx.id_paket)) || {};
+    const riwayatBayar = state.pembayaran.filter(b => String(b.id_transaksi) === String(trx.id_transaksi));
+
+    const totalKontrak = angka(trx.total_transaksi);
+    const totalDibayar = riwayatBayar.reduce((sum, b) => sum + angka(b.jumlah_bayar), 0);
+    const sisaTagihan = Math.max(totalKontrak - totalDibayar, 0);
+    const isLunas = sisaTagihan <= 0 && totalKontrak > 0;
+
+    // Header & Nomor Invoice
+    const nomorInv = `INV/LW/${new Date().getFullYear()}/${String(trx.id_transaksi).padStart(4, "0")}`;
+    document.getElementById("inv-number").textContent = nomorInv;
+    document.getElementById("inv-issue-date").textContent = tanggalIndonesia(trx.tanggal_transaksi || new Date().toISOString().slice(0, 10));
+    document.getElementById("inv-event-date").textContent = tanggalIndonesia(trx.tanggal_acara);
+
+    const statusBadge = document.getElementById("inv-status-badge");
+    statusBadge.textContent = isLunas ? "LUNAS (PAID)" : "BELUM LUNAS (OUTSTANDING)";
+    statusBadge.className = `inv-status-stamp ${isLunas ? "lunas" : "belum"}`;
+
+    // Data Klien
+    document.getElementById("inv-client-name").textContent = pelanggan.nama_pelanggan || "Pelanggan Umum";
+    document.getElementById("inv-client-phone").textContent = pelanggan.no_telepon ? `Telp/WA: ${pelanggan.no_telepon}` : "-";
+    document.getElementById("inv-client-email").textContent = pelanggan.email || "-";
+    document.getElementById("inv-client-address").textContent = pelanggan.alamat || "-";
+
+    // Rincian Paket
+    document.getElementById("inv-package-name").textContent = paket.nama_paket || "Paket Layanan Wedding";
+    document.getElementById("inv-package-desc").textContent = paket.deskripsi || "Layanan koordinasi & manajemen acara pernikahan.";
+    document.getElementById("inv-package-price").textContent = rupiah(totalKontrak);
+    document.getElementById("inv-package-total").textContent = rupiah(totalKontrak);
+
+    // Riwayat Pembayaran
+    const tbodyHistory = document.getElementById("inv-payment-history");
+    if (riwayatBayar.length === 0) {
+        tbodyHistory.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888;">Belum ada pembayaran masuk.</td></tr>`;
+    } else {
+        tbodyHistory.innerHTML = riwayatBayar.map(b => `
+            <tr>
+                <td>${tanggalIndonesia(b.tanggal_pembayaran)}</td>
+                <td>${escapeHTML(b.metode_pembayaran || "-")}</td>
+                <td>${escapeHTML(b.keterangan || "-")}</td>
+                <td style="text-align:right; font-weight:600;">${rupiah(b.jumlah_bayar)}</td>
+            </tr>
+        `).join("");
+    }
+
+    // Ringkasan Total
+    document.getElementById("inv-subtotal").textContent = rupiah(totalKontrak);
+    document.getElementById("inv-paid").textContent = rupiah(totalDibayar);
+    document.getElementById("inv-balance").textContent = rupiah(sisaTagihan);
+
+    document.getElementById("invoice-modal").classList.remove("hidden");
+}
+
+function tutupInvoiceModal() {
+    document.getElementById("invoice-modal").classList.add("hidden");
+    document.body.classList.remove("printing-invoice");
+}
+
+function cetakInvoiceSekarang() {
+    document.body.classList.add("printing-invoice");
+    window.print();
+    setTimeout(() => {
+        document.body.classList.remove("printing-invoice");
+    }, 500);
+}
+
+/* =========================================
+   JURNAL UMUM (OTOMATIS & PENYESUAIAN)
 ========================================= */
 function buildDaftarJurnal() {
     const entri = [];
 
-    // 1. Jurnal dari Transaksi Wedding (Kontrak / Piutang vs Pendapatan Jasa)
+    // 1. Jurnal dari Transaksi Kontrak
     state.transaksi.forEach((trx, index) => {
         const nominal = angka(trx.total_transaksi);
         if (nominal <= 0) return;
 
-        const namaPelanggan = getNamaPelanggan(trx.id_pelanggan);
-        const namaPaket = getNamaPaket(trx.id_paket);
-        const tanggal = trx.tanggal_transaksi || trx.tanggal_acara || "";
-        const ref = `TRX-${trx.id_transaksi ?? index + 1}`;
-        const uraian = `Kontrak paket ${namaPaket} - ${namaPelanggan}`;
-
         entri.push({
-            tanggal,
-            ref,
+            tanggal: trx.tanggal_transaksi || trx.tanggal_acara || "",
+            ref: `TRX-${trx.id_transaksi ?? index + 1}`,
             jenis: "transaksi",
             akunDebit: "Piutang Usaha",
             akunKredit: "Pendapatan Jasa Wedding",
             nominal,
-            keterangan: uraian,
+            keterangan: `Kontrak paket ${getNamaPaket(trx.id_paket)} - ${getNamaPelanggan(trx.id_pelanggan)}`,
             isManual: false
         });
     });
 
-    // 2. Jurnal dari Pembayaran Masuk (Kas vs Piutang Usaha)
+    // 2. Jurnal dari Pembayaran Masuk
     state.pembayaran.forEach((byr, index) => {
         const nominal = angka(byr.jumlah_bayar);
         if (nominal <= 0) return;
 
         const trx = state.transaksi.find(t => String(t.id_transaksi) === String(byr.id_transaksi));
         const namaPelanggan = trx ? getNamaPelanggan(trx.id_pelanggan) : "-";
-        const tanggal = byr.tanggal_pembayaran || "";
-        const ref = `BYR-${byr.id_pembayaran ?? byr.id_transaksi ?? index + 1}`;
-        const ketTambahan = byr.keterangan ? ` (${byr.keterangan})` : "";
-        const uraian = `Penerimaan pembayaran via ${byr.metode_pembayaran || "-"} - ${namaPelanggan}${ketTambahan}`;
+        const ket = byr.keterangan ? ` (${byr.keterangan})` : "";
 
         entri.push({
-            tanggal,
-            ref,
+            tanggal: byr.tanggal_pembayaran || "",
+            ref: `BYR-${byr.id_pembayaran ?? byr.id_transaksi ?? index + 1}`,
             jenis: "pembayaran",
             akunDebit: "Kas",
             akunKredit: "Piutang Usaha",
             nominal,
-            keterangan: uraian,
+            keterangan: `Penerimaan via ${byr.metode_pembayaran || "-"} - ${namaPelanggan}${ket}`,
             isManual: false
         });
     });
 
-    // 3. Jurnal Manual / Penyesuaian
+    // 3. Jurnal Manual / Beban / Penyesuaian
     state.jurnalManual.forEach((jrn, index) => {
         const nominal = angka(jrn.nominal_jurnal);
         if (nominal <= 0) return;
@@ -310,7 +419,7 @@ function buildDaftarJurnal() {
         entri.push({
             idManual: jrn.id_jurnal,
             tanggal: jrn.tanggal_jurnal || "",
-            ref: jrn.no_referensi || `JRN-${index + 1}`,
+            ref: jrn.no_referensi || `ADJ-${index + 1}`,
             jenis: "manual",
             akunDebit: jrn.akun_debit || "Akun Debit",
             akunKredit: jrn.akun_kredit || "Akun Kredit",
@@ -320,7 +429,6 @@ function buildDaftarJurnal() {
         });
     });
 
-    // Urutkan berdasarkan tanggal (terbaru di atas)
     entri.sort((a, b) => String(b.tanggal || "").localeCompare(String(a.tanggal || "")));
     return entri;
 }
@@ -332,9 +440,8 @@ function renderJurnal() {
 
     const difilter = semuaJurnal.filter(item => {
         const cocokJenis = filterJenis === "all" || item.jenis === filterJenis;
-        const teksGabung = `${item.ref} ${item.akunDebit} ${item.akunKredit} ${item.keterangan}`.toLowerCase();
-        const cocokKata = !keyword || teksGabung.includes(keyword);
-        return cocokJenis && cocokKata;
+        const teks = `${item.ref} ${item.akunDebit} ${item.akunKredit} ${item.keterangan}`.toLowerCase();
+        return cocokJenis && (!keyword || teks.includes(keyword));
     });
 
     let totalDebit = 0;
@@ -348,10 +455,10 @@ function renderJurnal() {
             ? `<span style="font-size:10px; padding:2px 7px; border-radius:10px; background:#eff6ff; color:#1d4ed8; font-weight:600;">Transaksi</span>`
             : item.jenis === "pembayaran"
                 ? `<span style="font-size:10px; padding:2px 7px; border-radius:10px; background:#f0fdf4; color:#198754; font-weight:600;">Pembayaran</span>`
-                : `<span style="font-size:10px; padding:2px 7px; border-radius:10px; background:#fdf2f8; color:#be185d; font-weight:600;">Manual</span>`;
+                : `<span style="font-size:10px; padding:2px 7px; border-radius:10px; background:#fdf2f8; color:#be185d; font-weight:600;">Penyesuaian</span>`;
 
         const tombolHapusManual = item.isManual
-            ? `<button type="button" data-delete-jurnal="${escapeHTML(item.idManual)}" style="margin-left:8px; padding:2px 8px; font-size:11px; cursor:pointer;">Hapus</button>`
+            ? `<button type="button" class="btn-sm btn-danger" data-delete-jurnal="${escapeHTML(item.idManual)}" style="margin-left:8px; padding:2px 7px; font-size:10.5px;">Hapus</button>`
             : "";
 
         return `
@@ -394,7 +501,7 @@ function renderJurnal() {
     if (elSelisih) elSelisih.textContent = `Selisih: ${rupiah(selisih)}`;
 }
 
-async function saveJurnalManual(event) {
+function saveJurnalManual(event) {
     event.preventDefault();
     const form = event.currentTarget;
     const payload = dataForm(form, [
@@ -420,18 +527,21 @@ async function saveJurnalManual(event) {
     simpanJurnalManualStorage();
     resetForm("form-jurnal");
     tampilkanForm("form-jurnal", false);
-    renderJurnal();
-    tampilkanPesan("Jurnal manual berhasil dicatat.");
+    renderAll();
+    tampilkanPesan("Jurnal penyesuaian/beban berhasil disimpan & diperbarui ke laporan.");
 }
 
 function deleteJurnalManual(idJurnal) {
-    if (!confirm("Yakin ingin menghapus entri jurnal manual ini?")) return;
+    if (!confirm("Yakin ingin menghapus entri jurnal ini?")) return;
     state.jurnalManual = state.jurnalManual.filter(item => String(item.id_jurnal) !== String(idJurnal));
     simpanJurnalManualStorage();
-    renderJurnal();
-    tampilkanPesan("Entri jurnal manual dihapus.");
+    renderAll();
+    tampilkanPesan("Entri jurnal berhasil dihapus.");
 }
 
+/* =========================================
+   RENDER DASHBOARD & MODUL OPERASIONAL
+========================================= */
 function renderDashboard() {
     const totalPendapatan = state.pembayaran.reduce((total, item) => total + angka(item.jumlah_bayar), 0);
     const totalTagihan = state.transaksi.reduce((total, item) => total + angka(item.total_transaksi), 0);
@@ -450,13 +560,7 @@ function renderDashboard() {
         if (elemen) elemen.textContent = nilai;
     });
 
-    const ringkasan = [
-        ["nilai-tagihan", totalTagihan],
-        ["nilai-pembayaran", totalPendapatan],
-        ["nilai-piutang", totalPiutang]
-    ];
-
-    ringkasan.forEach(([id, nilai]) => {
+    [["nilai-tagihan", totalTagihan], ["nilai-pembayaran", totalPendapatan], ["nilai-piutang", totalPiutang]].forEach(([id, nilai]) => {
         const elemen = document.getElementById(id);
         if (elemen) elemen.textContent = rupiah(nilai);
     });
@@ -464,54 +568,31 @@ function renderDashboard() {
     const maksimum = Math.max(totalTagihan, totalPendapatan, totalPiutang, 1);
     [["bar-tagihan", totalTagihan], ["bar-pembayaran", totalPendapatan], ["bar-piutang", totalPiutang]].forEach(([id, nilai]) => {
         const elemen = document.getElementById(id);
-        if (elemen) elemen.style.width = `${Math.min(angka(nilai) / maksimum * 100, 100)}%`;
+        if (elemen) elemen.style.width = `${Math.min((angka(nilai) / maksimum) * 100, 100)}%`;
     });
 
-    // ==========================================
-    // KODE GRAFIK CHART.JS
-    // ==========================================
-    const ctx = document.getElementById('keuanganChart');
+    const ctx = document.getElementById("keuanganChart");
     if (ctx) {
-        if (grafikKeuangan) {
-            grafikKeuangan.destroy();
-        }
-
+        if (grafikKeuangan) grafikKeuangan.destroy();
         grafikKeuangan = new Chart(ctx, {
-            type: 'doughnut',
+            type: "doughnut",
             data: {
-                labels: ['Kas Masuk (Aman)', 'Sisa Piutang (Tagihan)'],
+                labels: ["Kas Masuk (Aman)", "Sisa Piutang (Tagihan)"],
                 datasets: [{
                     data: [totalPendapatan, totalPiutang],
-                    backgroundColor: [
-                        '#198754', // Hijau untuk Kas
-                        '#dc3545'  // Merah untuk Piutang
-                    ],
+                    backgroundColor: ["#198754", "#dc3545"],
                     borderWidth: 2,
-                    borderColor: '#ffffff',
+                    borderColor: "#ffffff",
                     hoverOffset: 6
                 }]
             },
             options: {
                 responsive: true,
                 plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            font: { family: "'Poppins', sans-serif" }
-                        }
-                    },
+                    legend: { position: "bottom" },
                     tooltip: {
                         callbacks: {
-                            label: function(context) {
-                                let label = context.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed !== null) {
-                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(context.parsed);
-                                }
-                                return label;
-                            }
+                            label: context => `${context.label}: ${rupiah(context.parsed)}`
                         }
                     }
                 }
@@ -521,17 +602,17 @@ function renderDashboard() {
 }
 
 function renderPelanggan() {
-    const keyword = document.getElementById("search-pelanggan")?.value.toLowerCase() || "";
-
+    const keyword = (document.getElementById("search-pelanggan")?.value || "").toLowerCase();
     const filteredData = state.pelanggan.filter(item =>
         (item.nama_pelanggan || "").toLowerCase().includes(keyword) ||
         (item.no_telepon || "").toLowerCase().includes(keyword) ||
-        (item.email || "").toLowerCase().includes(keyword)
+        (item.email || "").toLowerCase().includes(keyword) ||
+        (item.alamat || "").toLowerCase().includes(keyword)
     );
 
     const html = filteredData.map(item => `
         <tr>
-            <td>${escapeHTML(item.nama_pelanggan)}</td>
+            <td><strong>${escapeHTML(item.nama_pelanggan)}</strong></td>
             <td>${escapeHTML(item.no_telepon)}</td>
             <td>${escapeHTML(item.email)}</td>
             <td>${escapeHTML(item.alamat)}</td>
@@ -557,36 +638,65 @@ function renderPaket() {
 
     const container = document.getElementById("paket-grid-container");
     if (container) {
-        container.innerHTML = html || `<p style="text-align:center; width:100%; color:#96868c;">Belum ada paket.</p>`;
+        container.innerHTML = html || `<p style="text-align:center; width:100%; color:#96868c;">Belum ada paket wedding.</p>`;
     }
 }
 
 function renderTransaksi() {
-    const html = state.transaksi.map(item => `
-        <tr>
-            <td>${escapeHTML(item.id_transaksi)}</td>
-            <td>${escapeHTML(getNamaPelanggan(item.id_pelanggan))}</td>
-            <td>${escapeHTML(getNamaPaket(item.id_paket))}</td>
-            <td>${tanggalIndonesia(item.tanggal_acara)}</td>
-            <td>${rupiah(item.total_transaksi)}</td>
-            <td>${badgeStatus(item.status)}</td>
-            <td>${actionButtons("transaksi", item.id_transaksi)}</td>
-        </tr>
-    `).join("");
-    setIsiTabel("tabel-transaksi", html, 7);
+    const keyword = (document.getElementById("search-transaksi")?.value || "").toLowerCase();
+    const filteredData = state.transaksi.filter(item => {
+        const nama = getNamaPelanggan(item.id_pelanggan).toLowerCase();
+        const paket = getNamaPaket(item.id_paket).toLowerCase();
+        const status = (item.status || "").toLowerCase();
+        const idStr = String(item.id_transaksi).toLowerCase();
+        return nama.includes(keyword) || paket.includes(keyword) || status.includes(keyword) || idStr.includes(keyword);
+    });
+
+    const html = filteredData.map(item => {
+        const sisa = getPiutang(item);
+        const tombolInvoice = `<button type="button" class="btn-sm btn-invoice" data-invoice="${escapeHTML(item.id_transaksi)}"><i class="fa-solid fa-file-invoice"></i> Invoice</button>`;
+        const tombolBayar = sisa > 0
+            ? `<button type="button" class="btn-sm btn-pay" data-quick-pay="${escapeHTML(item.id_transaksi)}"><i class="fa-solid fa-money-bill-wave"></i> Bayar</button>`
+            : "";
+
+        return `
+            <tr>
+                <td><strong>#${escapeHTML(item.id_transaksi)}</strong></td>
+                <td><strong>${escapeHTML(getNamaPelanggan(item.id_pelanggan))}</strong></td>
+                <td>${escapeHTML(getNamaPaket(item.id_paket))}</td>
+                <td>${tanggalIndonesia(item.tanggal_acara)}</td>
+                <td>${rupiah(item.total_transaksi)}</td>
+                <td style="font-weight:700; color:${sisa > 0 ? "#d84a5f" : "#198754"};">${rupiah(sisa)}</td>
+                <td>${badgeStatus(item.status)}</td>
+                <td>${actionButtons("transaksi", item.id_transaksi, tombolInvoice + tombolBayar)}</td>
+            </tr>
+        `;
+    }).join("");
+
+    setIsiTabel("tabel-transaksi", html, 8);
 }
 
 function renderPembayaran() {
-    const html = state.pembayaran.map(item => {
+    const keyword = (document.getElementById("search-pembayaran")?.value || "").toLowerCase();
+    const filteredData = state.pembayaran.filter(item => {
+        const transaksi = state.transaksi.find(t => String(t.id_transaksi) === String(item.id_transaksi));
+        const nama = transaksi ? getNamaPelanggan(transaksi.id_pelanggan).toLowerCase() : "";
+        const metode = (item.metode_pembayaran || "").toLowerCase();
+        const ket = (item.keterangan || "").toLowerCase();
+        const idStr = String(item.id_transaksi).toLowerCase();
+        return nama.includes(keyword) || metode.includes(keyword) || ket.includes(keyword) || idStr.includes(keyword);
+    });
+
+    const html = filteredData.map(item => {
         const transaksi = state.transaksi.find(t => String(t.id_transaksi) === String(item.id_transaksi));
         const namaPelanggan = transaksi ? getNamaPelanggan(transaksi.id_pelanggan) : "-";
 
         return `
             <tr>
-                <td>${escapeHTML(item.id_transaksi)}</td>
+                <td><strong>#${escapeHTML(item.id_transaksi)}</strong></td>
                 <td><strong>${escapeHTML(namaPelanggan)}</strong></td>
                 <td>${tanggalIndonesia(item.tanggal_pembayaran)}</td>
-                <td>${rupiah(item.jumlah_bayar)}</td>
+                <td style="color:#198754; font-weight:700;">${rupiah(item.jumlah_bayar)}</td>
                 <td>${escapeHTML(item.metode_pembayaran)}</td>
                 <td>${escapeHTML(item.keterangan)}</td>
                 <td>${actionButtons("pembayaran", item.id_pembayaran)}</td>
@@ -602,7 +712,7 @@ function renderPiutang() {
     let transaksiBerhutang = 0;
     let totalPenyisihan = 0;
 
-    const keyword = document.getElementById("search-piutang")?.value.toLowerCase() || "";
+    const keyword = (document.getElementById("search-piutang")?.value || "").toLowerCase();
 
     const filteredData = state.transaksi.filter(item => {
         const namaPelanggan = getNamaPelanggan(item.id_pelanggan).toLowerCase();
@@ -621,11 +731,9 @@ function renderPiutang() {
         }
 
         const persen = totalTagihan > 0 ? Math.min((totalBayar / totalTagihan) * 100, 100) : 0;
-
-        const tanggalAcara = new Date(item.tanggal_acara);
+        const tanggalAcara = new Date(item.tanggal_acara + "T00:00:00");
         const hariIni = new Date();
         hariIni.setHours(0, 0, 0, 0);
-        tanggalAcara.setHours(0, 0, 0, 0);
 
         let statusPiutang = "";
         let warnaStatus = "";
@@ -637,25 +745,19 @@ function renderPiutang() {
             warnaStatus = "#198754";
         } else {
             warnaTeksSisa = "#d84a5f";
-            const selisihWaktu = hariIni.getTime() - tanggalAcara.getTime();
-            const selisihHari = Math.ceil(selisihWaktu / (1000 * 3600 * 24));
+            const selisihHari = Math.ceil((hariIni.getTime() - tanggalAcara.getTime()) / (1000 * 3600 * 24));
 
             if (selisihHari > 0) {
                 statusPiutang = `JATUH TEMPO (${selisihHari} Hari)`;
                 warnaStatus = "#dc3545";
-
-                if (selisihHari <= 30) {
-                    nilaiPenyisihan = sisa * 0.05;
-                } else if (selisihHari <= 60) {
-                    nilaiPenyisihan = sisa * 0.10;
-                } else {
-                    nilaiPenyisihan = sisa * 0.20;
-                }
+                if (selisihHari <= 30) nilaiPenyisihan = sisa * 0.05;
+                else if (selisihHari <= 60) nilaiPenyisihan = sisa * 0.10;
+                else nilaiPenyisihan = sisa * 0.20;
             } else if (selisihHari === 0) {
-                statusPiutang = `HARI H ACARA!`;
+                statusPiutang = "HARI H ACARA!";
                 warnaStatus = "#fd7e14";
             } else {
-                statusPiutang = `BELUM JATUH TEMPO`;
+                statusPiutang = "BELUM JATUH TEMPO";
                 warnaStatus = "#b7791f";
             }
         }
@@ -663,22 +765,17 @@ function renderPiutang() {
         totalPenyisihan += nilaiPenyisihan;
 
         const badgeJatuhTempo = `<span style="display:inline-block; padding:4px 8px; border-radius:6px; background:${warnaStatus}15; color:${warnaStatus}; font-size:10px; font-weight:700; border: 1px solid ${warnaStatus}40; margin-bottom: 5px;">${statusPiutang}</span>`;
-
-        let infoPenyisihan = "";
-        if (nilaiPenyisihan > 0) {
-            infoPenyisihan = `<div style="font-size:10px; color:var(--pink-dark); margin-top:4px;">⚠️ Risiko Tak Tertagih: <br>${rupiah(nilaiPenyisihan)}</div>`;
-        }
+        const infoPenyisihan = nilaiPenyisihan > 0
+            ? `<div style="font-size:10px; color:var(--pink-dark); margin-top:4px;">⚠️ Cadangan: ${rupiah(nilaiPenyisihan)}</div>`
+            : "";
 
         const dataPelanggan = state.pelanggan.find(p => String(p.id_pelanggan) === String(item.id_pelanggan));
-
         let tombolWA = "";
         if (sisa > 0 && dataPelanggan && dataPelanggan.no_telepon) {
-            const noWA = dataPelanggan.no_telepon.replace(/[^0-9]/g, '').replace(/^0/, '62');
-            let teksPeringatan = statusPiutang.includes("JATUH TEMPO") ? `\n\n⚠️ *PEMBERITAHUAN:* Tagihan ini telah melewati tanggal acara (Jatuh Tempo).` : "";
-            const teksPesan = encodeURIComponent(`Halo ${dataPelanggan.nama_pelanggan},\n\nKami dari *SIAWO - Lunelle Wedding* ingin menginformasikan ringkasan tagihan acara Anda.${teksPeringatan}\n\nTotal Tagihan: ${rupiah(totalTagihan)}\nTotal Dibayar: ${rupiah(totalBayar)}\n*Sisa Piutang: ${rupiah(sisa)}*\n\nMohon untuk dapat melakukan pelunasan sisa tagihan tersebut. Terima kasih atas kepercayaannya! ♡`);
-            tombolWA = `<a href="https://wa.me/${noWA}?text=${teksPesan}" target="_blank" style="display:inline-block; margin-top:4px; padding:6px 12px; background:#25D366; color:white; border-radius:6px; font-size:11px; font-weight:bold; text-decoration:none; box-shadow: 0 2px 5px rgba(37,211,102,0.3); transition: 0.2s;">💬 Tagih via WA</a>`;
-        } else if (sisa > 0) {
-            tombolWA = `<span style="display:inline-block; margin-top:4px; font-size:10px; color:var(--muted);">No. HP tidak valid</span>`;
+            const noWA = dataPelanggan.no_telepon.replace(/[^0-9]/g, "").replace(/^0/, "62");
+            const teksPeringatan = statusPiutang.includes("JATUH TEMPO") ? `\n\n⚠️ *PEMBERITAHUAN:* Tagihan ini telah melewati tanggal acara (Jatuh Tempo).` : "";
+            const teksPesan = encodeURIComponent(`Halo ${dataPelanggan.nama_pelanggan},\n\nKami dari *SIAWO - Lunelle Wedding* menginformasikan ringkasan tagihan acara Anda.${teksPeringatan}\n\nTotal Tagihan: ${rupiah(totalTagihan)}\nTotal Dibayar: ${rupiah(totalBayar)}\n*Sisa Piutang: ${rupiah(sisa)}*\n\nMohon untuk dapat melakukan pelunasan sisa tagihan tersebut. Terima kasih! ♡`);
+            tombolWA = `<a href="https://wa.me/${noWA}?text=${teksPesan}" target="_blank" style="display:inline-block; margin-top:4px; padding:5px 10px; background:#25D366; color:white; border-radius:6px; font-size:11px; font-weight:bold; text-decoration:none;">💬 Tagih WA</a>`;
         }
 
         return `
@@ -686,7 +783,7 @@ function renderPiutang() {
                 <td><strong>#${escapeHTML(item.id_transaksi)}</strong></td>
                 <td>
                     <strong>${escapeHTML(getNamaPelanggan(item.id_pelanggan))}</strong><br>
-                    <span style="font-size:10px; color:var(--muted);">Acara: ${tanggalIndonesia(item.tanggal_acara)}</span>
+                    <span style="font-size:10.5px; color:var(--muted);">Acara: ${tanggalIndonesia(item.tanggal_acara)}</span>
                 </td>
                 <td>${rupiah(totalTagihan)}</td>
                 <td>
@@ -694,18 +791,16 @@ function renderPiutang() {
                         <div style="flex:1; height:6px; background:#f0e3e7; border-radius:10px; overflow:hidden;">
                             <div style="width:${persen}%; height:100%; background:var(--pink); border-radius:10px;"></div>
                         </div>
-                        <span style="font-size:10px; font-weight:bold; color:var(--pink-dark);">${Math.round(persen)}%</span>
+                        <span style="font-size:10.5px; font-weight:bold; color:var(--pink-dark);">${Math.round(persen)}%</span>
                     </div>
-                    <div style="font-size:10px; color:var(--muted);">Terbayar: ${rupiah(totalBayar)}</div>
+                    <div style="font-size:10.5px; color:var(--muted);">Terbayar: ${rupiah(totalBayar)}</div>
                 </td>
                 <td>
-                    <strong style="color: ${warnaTeksSisa}; font-size: 15px;">${rupiah(sisa)}</strong>
+                    <strong style="color:${warnaTeksSisa}; font-size:14.5px;">${rupiah(sisa)}</strong>
                     ${infoPenyisihan}
                 </td>
-                <td style="text-align: center;">
-                    ${badgeJatuhTempo}
-                    <br>
-                    ${tombolWA}
+                <td style="text-align:center;">
+                    ${badgeJatuhTempo}<br>${tombolWA}
                 </td>
             </tr>
         `;
@@ -715,17 +810,186 @@ function renderPiutang() {
 
     const totalElem = document.getElementById("summary-total-piutang");
     if (totalElem) totalElem.textContent = rupiah(totalSeluruhPiutang);
-
     const orangElem = document.getElementById("summary-orang-piutang");
     if (orangElem) orangElem.textContent = `${transaksiBerhutang} Transaksi Berhutang`;
-
     const penyisihanElem = document.getElementById("summary-penyisihan");
     if (penyisihanElem) penyisihanElem.textContent = rupiah(totalPenyisihan);
-
     const bersihElem = document.getElementById("summary-piutang-bersih");
-    if (bersihElem) bersihElem.textContent = rupiah(totalSeluruhPiutang - totalPenyisihan);
+    if (bersihElem) bersihElem.textContent = rupiah(Math.max(totalSeluruhPiutang - totalPenyisihan, 0));
 }
 
+/* =========================================
+   LAPORAN KEUANGAN STANDAR AKUNTANSI (SAK EMKM)
+   1. Laba Rugi
+   2. Perubahan Ekuitas
+   3. Posisi Keuangan (Neraca)
+   4. Arus Kas
+========================================= */
+function renderLaporan() {
+    const hariIniTeks = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    const tahunTeks = `31 Desember ${new Date().getFullYear()}`;
+
+    document.querySelectorAll(".tanggal-cetak-teks").forEach(el => el.textContent = hariIniTeks);
+    document.querySelectorAll(".periode-laporan-teks").forEach(el => el.textContent = tahunTeks);
+
+    // 1. Komponen Pendapatan & Kas dari Database Utama
+    const pendapatanJasa = state.transaksi.reduce((sum, t) => sum + angka(t.total_transaksi), 0);
+    const kasMasukPelanggan = state.pembayaran.reduce((sum, p) => sum + angka(p.jumlah_bayar), 0);
+    const piutangBruto = state.transaksi.reduce((sum, t) => sum + getPiutang(t), 0);
+    const cadanganPiutang = hitungTotalPenyisihanPiutang();
+    const piutangNeto = Math.max(piutangBruto - cadanganPiutang, 0);
+
+    // 2. Komponen Beban, Prive, Utang, & Setoran Modal Tambahan dari Jurnal Manual
+    const kelompokBeban = {};
+    let totalBebanManual = 0;
+    let totalPrive = 0;
+    let totalUtang = 0;
+    let setoranModalJurnal = 0;
+
+    state.jurnalManual.forEach(jrn => {
+        const nominal = angka(jrn.nominal_jurnal);
+        const debitLower = (jrn.akun_debit || "").toLowerCase();
+        const kreditLower = (jrn.akun_kredit || "").toLowerCase();
+
+        // Beban Operasional (kecuali beban kerugian piutang yang sudah dihitung otomatis dari aging)
+        if (debitLower.includes("beban") && !debitLower.includes("kerugian piutang")) {
+            const namaAkun = jrn.akun_debit.trim();
+            kelompokBeban[namaAkun] = (kelompokBeban[namaAkun] || 0) + nominal;
+            totalBebanManual += nominal;
+        }
+        // Prive Pemilik
+        if (debitLower.includes("prive")) {
+            totalPrive += nominal;
+        }
+        // Utang Usaha
+        if (kreditLower.includes("utang")) {
+            totalUtang += nominal;
+        }
+        if (debitLower.includes("utang")) {
+            totalUtang = Math.max(totalUtang - nominal, 0);
+        }
+        // Tambahan Modal dari Jurnal
+        if (kreditLower.includes("modal")) {
+            setoranModalJurnal += nominal;
+        }
+    });
+
+    // --- A. LAPORAN LABA RUGI ---
+    const totalBeban = totalBebanManual + cadanganPiutang;
+    const labaBersih = pendapatanJasa - totalBeban;
+
+    const elPendapatanJasa = document.getElementById("lr-pendapatan-jasa");
+    const elTotalPendapatan = document.getElementById("lr-total-pendapatan");
+    const elBebanPenyisihan = document.getElementById("lr-beban-penyisihan");
+    const elTotalBeban = document.getElementById("lr-total-beban");
+    const elLabaBersih = document.getElementById("lr-laba-bersih");
+    const tbodyBeban = document.getElementById("lr-daftar-beban");
+
+    if (elPendapatanJasa) elPendapatanJasa.textContent = rupiah(pendapatanJasa);
+    if (elTotalPendapatan) elTotalPendapatan.textContent = rupiah(pendapatanJasa);
+    if (tbodyBeban) {
+        const entriBeban = Object.entries(kelompokBeban);
+        tbodyBeban.innerHTML = entriBeban.length === 0
+            ? `<tr class="indent"><td style="color:#8c737b;"><em>Belum ada jurnal beban operasional dicatat</em></td><td class="nominal">Rp0</td></tr>`
+            : entriBeban.map(([akun, nom]) => `<tr class="indent"><td>${escapeHTML(akun)}</td><td class="nominal">${rupiah(nom)}</td></tr>`).join("");
+    }
+    if (elBebanPenyisihan) elBebanPenyisihan.textContent = rupiah(cadanganPiutang);
+    if (elTotalBeban) elTotalBeban.textContent = rupiah(totalBeban);
+    if (elLabaBersih) {
+        elLabaBersih.textContent = labaBersih < 0 ? kurungRupiah(labaBersih) : rupiah(labaBersih);
+        elLabaBersih.style.color = labaBersih < 0 ? "#dc2626" : "#15803d";
+    }
+
+    // --- B. LAPORAN PERUBAHAN EKUITAS ---
+    const modalAwalTotal = state.modalAwal + setoranModalJurnal;
+    const kenaikanEkuitas = labaBersih - totalPrive;
+    const modalAkhir = modalAwalTotal + kenaikanEkuitas;
+
+    const elPeModalAwal = document.getElementById("pe-modal-awal");
+    const elPeLaba = document.getElementById("pe-laba-bersih");
+    const elPePrive = document.getElementById("pe-prive");
+    const elPeKenaikan = document.getElementById("pe-kenaikan-ekuitas");
+    const elPeModalAkhir = document.getElementById("pe-modal-akhir");
+
+    if (elPeModalAwal) elPeModalAwal.textContent = rupiah(modalAwalTotal);
+    if (elPeLaba) elPeLaba.textContent = labaBersih < 0 ? kurungRupiah(labaBersih) : rupiah(labaBersih);
+    if (elPePrive) elPePrive.textContent = kurungRupiah(totalPrive);
+    if (elPeKenaikan) elPeKenaikan.textContent = kenaikanEkuitas < 0 ? kurungRupiah(kenaikanEkuitas) : rupiah(kenaikanEkuitas);
+    if (elPeModalAkhir) elPeModalAkhir.textContent = rupiah(modalAkhir);
+
+    // --- C. LAPORAN POSISI KEUANGAN (NERACA) ---
+    // Persamaan Akuntansi: Kas + Piutang Neto = Utang + Modal Akhir
+    // Sehingga Saldo Kas = Modal Awal + Kas Masuk Pelanggan - Beban Tunai - Prive + Utang
+    const saldoKasAkhir = modalAwalTotal + kasMasukPelanggan - totalBebanManual - totalPrive + totalUtang;
+    const totalAset = saldoKasAkhir + piutangNeto;
+    const totalPasiva = totalUtang + modalAkhir;
+
+    const elNrKas = document.getElementById("nr-kas");
+    const elNrPiutangBruto = document.getElementById("nr-piutang-bruto");
+    const elNrCadangan = document.getElementById("nr-cadangan-piutang");
+    const elNrPiutangNeto = document.getElementById("nr-piutang-neto");
+    const elNrTotalAset = document.getElementById("nr-total-aset");
+    const elNrLiabilitas = document.getElementById("nr-liabilitas");
+    const elNrEkuitasAkhir = document.getElementById("nr-ekuitas-akhir");
+    const elNrTotalPasiva = document.getElementById("nr-total-pasiva");
+    const elNrBalance = document.getElementById("nr-status-balance");
+
+    if (elNrKas) elNrKas.textContent = rupiah(saldoKasAkhir);
+    if (elNrPiutangBruto) elNrPiutangBruto.textContent = rupiah(piutangBruto);
+    if (elNrCadangan) elNrCadangan.textContent = kurungRupiah(cadanganPiutang);
+    if (elNrPiutangNeto) elNrPiutangNeto.textContent = rupiah(piutangNeto);
+    if (elNrTotalAset) elNrTotalAset.textContent = rupiah(totalAset);
+    if (elNrLiabilitas) elNrLiabilitas.textContent = rupiah(totalUtang);
+    if (elNrEkuitasAkhir) elNrEkuitasAkhir.textContent = rupiah(modalAkhir);
+    if (elNrTotalPasiva) elNrTotalPasiva.textContent = rupiah(totalPasiva);
+    if (elNrBalance) {
+        const isBalance = Math.round(totalAset) === Math.round(totalPasiva);
+        elNrBalance.textContent = isBalance
+            ? "✓ Posisi Keuangan Seimbang (Total Aset = Total Liabilitas & Ekuitas)"
+            : `⚠ Selisih Neraca: ${rupiah(Math.abs(totalAset - totalPasiva))}`;
+    }
+
+    // --- D. LAPORAN ARUS KAS ---
+    const arusKasOperasi = kasMasukPelanggan - totalBebanManual;
+    const arusKasPendanaan = modalAwalTotal - totalPrive;
+
+    const elAkMasuk = document.getElementById("ak-kas-masuk");
+    const elAkKeluar = document.getElementById("ak-kas-keluar-beban");
+    const elAkOperasi = document.getElementById("ak-operasi-bersih");
+    const elAkModal = document.getElementById("ak-modal-awal");
+    const elAkPrive = document.getElementById("ak-prive");
+    const elAkPendanaan = document.getElementById("ak-pendanaan-bersih");
+    const elAkSaldoAkhir = document.getElementById("ak-saldo-akhir");
+
+    if (elAkMasuk) elAkMasuk.textContent = rupiah(kasMasukPelanggan);
+    if (elAkKeluar) elAkKeluar.textContent = kurungRupiah(totalBebanManual);
+    if (elAkOperasi) elAkOperasi.textContent = rupiah(arusKasOperasi);
+    if (elAkModal) elAkModal.textContent = rupiah(modalAwalTotal);
+    if (elAkPrive) elAkPrive.textContent = kurungRupiah(totalPrive);
+    if (elAkPendanaan) elAkPendanaan.textContent = rupiah(arusKasPendanaan);
+    if (elAkSaldoAkhir) elAkSaldoAkhir.textContent = rupiah(arusKasOperasi + arusKasPendanaan);
+
+    // Tabel Rincian Kas Masuk
+    const rowsKasHTML = state.pembayaran.map(item => {
+        const trx = state.transaksi.find(t => String(t.id_transaksi) === String(item.id_transaksi));
+        const nama = trx ? getNamaPelanggan(trx.id_pelanggan) : "-";
+        return `
+            <tr>
+                <td><strong>#${escapeHTML(item.id_transaksi)}</strong></td>
+                <td>${escapeHTML(nama)}</td>
+                <td>${tanggalIndonesia(item.tanggal_pembayaran)}</td>
+                <td>${escapeHTML(item.metode_pembayaran)}</td>
+                <td>${escapeHTML(item.keterangan)}</td>
+                <td style="text-align:right; font-weight:700; color:#198754;">${rupiah(item.jumlah_bayar)}</td>
+            </tr>
+        `;
+    }).join("");
+    setIsiTabel("tabel-laporan-kas", rowsKasHTML, 6);
+}
+
+/* =========================================
+   DROPDOWN, FORM, & NAVIGASI
+========================================= */
 function isiDropdown(id, data, kolomID, pembuatLabel) {
     const elemen = document.getElementById(id);
     if (!elemen) return;
@@ -737,7 +1001,7 @@ function isiDropdown(id, data, kolomID, pembuatLabel) {
 function renderPilihanDropdown() {
     isiDropdown("pilih-pelanggan", state.pelanggan, "id_pelanggan", item => item.nama_pelanggan);
     isiDropdown("pilih-paket", state.paket, "id_paket", item => `${item.nama_paket} - ${rupiah(item.harga)}`);
-    isiDropdown("pilih-transaksi", state.transaksi, "id_transaksi", item => `${item.id_transaksi} - ${getNamaPelanggan(item.id_pelanggan)}`);
+    isiDropdown("pilih-transaksi", state.transaksi, "id_transaksi", item => `#${item.id_transaksi} - ${getNamaPelanggan(item.id_pelanggan)} (Sisa: ${rupiah(getPiutang(item))})`);
 }
 
 function isiHargaPaket() {
@@ -773,11 +1037,11 @@ function showPage(namaHalaman) {
         dashboard: "Dashboard",
         pelanggan: "Data Pelanggan",
         paket: "Paket Wedding",
-        transaksi: "Transaksi Wedding",
-        pembayaran: "Pembayaran",
+        transaksi: "Transaksi & Invoice",
+        pembayaran: "Penerimaan Pembayaran",
         jurnal: "Jurnal Umum",
-        piutang: "Piutang",
-        laporan: "Laporan Keuangan"
+        piutang: "Buku Piutang",
+        laporan: "Laporan Keuangan (SAK)"
     };
     const elemenJudul = document.getElementById("page-title");
     if (elemenJudul) elemenJudul.textContent = judul[namaHalaman] || "SIAWO";
@@ -792,15 +1056,28 @@ function setupNavigation() {
     });
 
     document.addEventListener("click", event => {
-        const tombol = event.target.closest("[data-go]");
-        if (tombol) {
+        const tombolGo = event.target.closest("[data-go]");
+        if (tombolGo) {
             event.preventDefault();
-            const targetPage = tombol.dataset.go;
+            const targetPage = tombolGo.dataset.go;
             showPage(targetPage);
             if (targetPage === "pelanggan") {
                 resetForm("form-pelanggan");
                 tampilkanForm("form-pelanggan", true);
+            } else if (targetPage === "transaksi") {
+                resetForm("form-transaksi");
+                tampilkanForm("form-transaksi", true);
             }
+        }
+
+        // Tab Laporan Keuangan (Laba Rugi, Perubahan Ekuitas, Posisi Keuangan, Arus Kas)
+        const tombolTab = event.target.closest("[data-report-tab]");
+        if (tombolTab) {
+            const tabKey = tombolTab.dataset.reportTab;
+            document.querySelectorAll(".report-tab-btn").forEach(btn => btn.classList.toggle("active", btn === tombolTab));
+            document.querySelectorAll(".report-panel").forEach(panel => {
+                panel.classList.toggle("active", panel.id === `panel-${tabKey}`);
+            });
         }
     });
 }
@@ -872,7 +1149,7 @@ async function savePaket(event) {
         resetForm("form-paket");
         tampilkanForm("form-paket", false);
         await loadAllData();
-        tampilkanPesan("Data paket berhasil disimpan.");
+        tampilkanPesan("Data paket wedding berhasil disimpan.");
     } catch (error) {
         tampilkanPesan("Gagal menyimpan paket: " + error.message, "error");
     }
@@ -892,7 +1169,7 @@ async function saveTransaksi(event) {
         resetForm("form-transaksi");
         tampilkanForm("form-transaksi", false);
         await loadAllData();
-        tampilkanPesan("Transaksi berhasil disimpan.");
+        tampilkanPesan("Transaksi berhasil disimpan. Anda dapat langsung mencetak invoice pada tabel.");
     } catch (error) {
         tampilkanPesan("Gagal menyimpan transaksi: " + error.message, "error");
     }
@@ -912,25 +1189,19 @@ async function savePembayaran(event) {
             await supabaseRequest("pembayaran", { method: "POST", body: payload });
         }
 
-        // OTOMATISASI STATUS TRANSAKSI
         const idTransaksiTerkait = payload.id_transaksi;
         const transaksiData = state.transaksi.find(t => String(t.id_transaksi) === String(idTransaksiTerkait));
 
         if (transaksiData) {
             const totalTagihan = angka(transaksiData.total_transaksi);
-
             const pembayaranLama = state.pembayaran
                 .filter(p => String(p.id_transaksi) === String(idTransaksiTerkait) && String(p.id_pembayaran) !== String(id))
                 .reduce((sum, p) => sum + angka(p.jumlah_bayar), 0);
 
             const totalSudahDibayar = pembayaranLama + angka(payload.jumlah_bayar);
-
             let statusBaru = transaksiData.status;
-            if (totalSudahDibayar >= totalTagihan) {
-                statusBaru = "Lunas";
-            } else if (totalSudahDibayar > 0) {
-                statusBaru = "Berlangsung";
-            }
+            if (totalSudahDibayar >= totalTagihan) statusBaru = "Lunas";
+            else if (totalSudahDibayar > 0) statusBaru = "Berlangsung";
 
             await supabaseRequest("transaksi_wedding", {
                 method: "PATCH",
@@ -942,7 +1213,7 @@ async function savePembayaran(event) {
         resetForm("form-pembayaran");
         tampilkanForm("form-pembayaran", false);
         await loadAllData();
-        tampilkanPesan("Pembayaran berhasil disimpan dan status transaksi diperbarui otomatis.");
+        tampilkanPesan("Pembayaran tercatat & status transaksi otomatis diperbarui.");
     } catch (error) {
         tampilkanPesan("Gagal menyimpan pembayaran: " + error.message, "error");
     }
@@ -1016,25 +1287,12 @@ async function deleteRecord(jenis, id) {
 }
 
 function setupSearch() {
-    const inputPelanggan = document.getElementById("search-pelanggan");
-    if (inputPelanggan) {
-        inputPelanggan.addEventListener("input", renderPelanggan);
-    }
-
-    const inputPiutang = document.getElementById("search-piutang");
-    if (inputPiutang) {
-        inputPiutang.addEventListener("input", renderPiutang);
-    }
-
-    const inputJurnal = document.getElementById("search-jurnal");
-    if (inputJurnal) {
-        inputJurnal.addEventListener("input", renderJurnal);
-    }
-
-    const filterJenisJurnal = document.getElementById("filter-jenis-jurnal");
-    if (filterJenisJurnal) {
-        filterJenisJurnal.addEventListener("change", renderJurnal);
-    }
+    document.getElementById("search-pelanggan")?.addEventListener("input", renderPelanggan);
+    document.getElementById("search-transaksi")?.addEventListener("input", renderTransaksi);
+    document.getElementById("search-pembayaran")?.addEventListener("input", renderPembayaran);
+    document.getElementById("search-piutang")?.addEventListener("input", renderPiutang);
+    document.getElementById("search-jurnal")?.addEventListener("input", renderJurnal);
+    document.getElementById("filter-jenis-jurnal")?.addEventListener("change", renderJurnal);
 }
 
 function setupForms() {
@@ -1060,13 +1318,10 @@ function setupForms() {
         }
     });
 
-    const tombolJurnalManual = document.getElementById("tambah-jurnal-manual");
-    if (tombolJurnalManual) {
-        tombolJurnalManual.addEventListener("click", () => {
-            resetForm("form-jurnal");
-            tampilkanForm("form-jurnal", true);
-        });
-    }
+    document.getElementById("tambah-jurnal-manual")?.addEventListener("click", () => {
+        resetForm("form-jurnal");
+        tampilkanForm("form-jurnal", true);
+    });
 
     document.querySelectorAll("[data-cancel], [data-close]").forEach(tombol => {
         tombol.addEventListener("click", () => {
@@ -1078,12 +1333,52 @@ function setupForms() {
         });
     });
 
-    const pilihPaket = document.getElementById("pilih-paket");
-    if (pilihPaket) pilihPaket.addEventListener("change", isiHargaPaket);
+    document.getElementById("pilih-paket")?.addEventListener("change", isiHargaPaket);
+
+    // Pengaturan Modal Awal pada Laporan Keuangan
+    document.getElementById("btn-simpan-modal")?.addEventListener("click", () => {
+        const val = document.getElementById("input-modal-awal")?.value;
+        simpanModalAwal(val);
+        renderLaporan();
+        tampilkanPesan("Saldo modal awal berhasil diterapkan ke laporan keuangan.");
+    });
+
+    // Kontrol Modal Invoice
+    document.getElementById("btn-close-invoice")?.addEventListener("click", tutupInvoiceModal);
+    document.getElementById("btn-print-invoice")?.addEventListener("click", cetakInvoiceSekarang);
+    document.getElementById("invoice-modal")?.addEventListener("click", event => {
+        if (event.target.id === "invoice-modal") tutupInvoiceModal();
+    });
 }
 
 function setupTableActions() {
     document.addEventListener("click", event => {
+        const tombolInvoice = event.target.closest("[data-invoice]");
+        if (tombolInvoice) {
+            bukaInvoiceModal(tombolInvoice.dataset.invoice);
+            return;
+        }
+
+        // Pintasan "Bayar" langsung dari baris Transaksi
+        const tombolQuickPay = event.target.closest("[data-quick-pay]");
+        if (tombolQuickPay) {
+            const idTrx = tombolQuickPay.dataset.quickPay;
+            const trx = state.transaksi.find(t => String(t.id_transaksi) === String(idTrx));
+            showPage("pembayaran");
+            resetForm("form-pembayaran");
+            tampilkanForm("form-pembayaran", true);
+            const form = document.getElementById("form-pembayaran");
+            if (form) {
+                const selectTrx = form.elements.namedItem("id_transaksi");
+                const inputTgl = form.elements.namedItem("tanggal_pembayaran");
+                const inputJml = form.elements.namedItem("jumlah_bayar");
+                if (selectTrx) selectTrx.value = idTrx;
+                if (inputTgl) inputTgl.value = new Date().toISOString().slice(0, 10);
+                if (inputJml && trx) inputJml.value = getPiutang(trx);
+            }
+            return;
+        }
+
         const tombolEdit = event.target.closest("[data-edit]");
         const tombolHapus = event.target.closest("[data-delete]");
         const tombolHapusJurnal = event.target.closest("[data-delete-jurnal]");
@@ -1113,59 +1408,12 @@ document.addEventListener("DOMContentLoaded", initializeApp);
 /* =========================================
    FITUR LOGOUT
 ========================================= */
-const btnLogout = document.getElementById('btn-logout');
-
+const btnLogout = document.getElementById("btn-logout");
 if (btnLogout) {
-    btnLogout.addEventListener('click', function(e) {
+    btnLogout.addEventListener("click", function (e) {
         e.preventDefault();
-
-        const konfirmasi = confirm("Apakah Anda yakin ingin keluar dari sistem SIAWO?");
-
-        if (konfirmasi) {
-            window.location.href = 'login.html';
+        if (confirm("Apakah Anda yakin ingin keluar dari sistem SIAWO?")) {
+            window.location.href = "login.html";
         }
     });
-}
-
-function renderLaporan() {
-    const dataPembayaran = Array.isArray(state.pembayaran) ? state.pembayaran : [];
-    const dataTransaksi = Array.isArray(state.transaksi) ? state.transaksi : [];
-
-    const totalKas = dataPembayaran.reduce((sum, item) => sum + angka(item.jumlah_bayar), 0);
-    const totalKontrak = dataTransaksi.reduce((sum, item) => sum + angka(item.total_transaksi), 0);
-    const totalPiutang = dataTransaksi.reduce((sum, item) => sum + getPiutang(item), 0);
-
-    // 1. Update ke Layar Web (Kartu Warna-Warni)
-    const elKas = document.getElementById("laporan-kas-masuk");
-    const elKontrak = document.getElementById("laporan-total-kontrak");
-    const elPiutang = document.getElementById("laporan-total-piutang");
-    if (elKas) elKas.textContent = rupiah(totalKas);
-    if (elKontrak) elKontrak.textContent = rupiah(totalKontrak);
-    if (elPiutang) elPiutang.textContent = rupiah(totalPiutang);
-
-    // 2. Update ke Area Print (Tersembunyi di web)
-    const printKas = document.getElementById("print-kas");
-    const printKontrak = document.getElementById("print-kontrak");
-    const printPiutang = document.getElementById("print-piutang");
-    if (printKas) printKas.textContent = rupiah(totalKas);
-    if (printKontrak) printKontrak.textContent = rupiah(totalKontrak);
-    if (printPiutang) printPiutang.textContent = rupiah(totalPiutang);
-
-    // 3. Render Tabel
-    if (dataPembayaran.length === 0) {
-        setIsiTabel("tabel-laporan-kas", "", 5);
-        return;
-    }
-
-    const html = dataPembayaran.map(item => `
-        <tr>
-            <td><strong>#${escapeHTML(item.id_transaksi)}</strong></td>
-            <td>${tanggalIndonesia(item.tanggal_pembayaran)}</td>
-            <td><strong style="color: #198754;">${rupiah(item.jumlah_bayar)}</strong></td>
-            <td>${escapeHTML(item.metode_pembayaran)}</td>
-            <td>${escapeHTML(item.keterangan)}</td>
-        </tr>
-    `).join("");
-
-    setIsiTabel("tabel-laporan-kas", html, 5);
 }
