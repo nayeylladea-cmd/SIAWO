@@ -613,7 +613,7 @@ function renderLaporan() {
         }
         if (debitLower.includes("prive")) totalPrive += nominal;
         if (kreditLower.includes("utang")) totalUtang += nominal;
-        if (debitLower.includes("utang")) totalUtang = Math.max(totalUtang - nominal, 0);
+        if (debitLower.includes("utang")) totalUtang -= nominal;
         if (kreditLower.includes("modal")) setoranModalJurnal += nominal;
 
         if (debitLower.includes("peralatan") || debitLower.includes("aset tetap")) {
@@ -622,9 +622,12 @@ function renderLaporan() {
         }
         if (kreditLower.includes("peralatan") || kreditLower.includes("aset tetap")) {
             arusKasInvestasi += nominal;
-            nilaiAsetTetap = Math.max(nilaiAsetTetap - nominal, 0);
+            nilaiAsetTetap -= nominal;
         }
     });
+
+    totalUtang = Math.max(totalUtang, 0);
+    nilaiAsetTetap = Math.max(nilaiAsetTetap, 0);
 
     // 1. Laporan Laba Rugi
     const totalBeban = totalBebanManual + cadanganPiutang;
@@ -663,13 +666,30 @@ function renderLaporan() {
     if (document.getElementById("pe-kenaikan-ekuitas")) document.getElementById("pe-kenaikan-ekuitas").textContent = kenaikanEkuitas < 0 ? kurungRupiah(kenaikanEkuitas) : rupiah(kenaikanEkuitas);
     if (document.getElementById("pe-modal-akhir")) document.getElementById("pe-modal-akhir").textContent = rupiah(modalAkhir);
 
-    // 3. Laporan Posisi Keuangan (Neraca)
+    // 3. Laporan Arus Kas Standar (Operasi, Investasi, Pendanaan, Kenaikan Kas, Kas Awal & Akhir)
     const arusKasOperasi = kasMasukPelanggan - totalBebanManual;
     const arusKasPendanaan = setoranModalJurnal - totalPrive;
     const kenaikanBersihKas = arusKasOperasi + arusKasInvestasi + arusKasPendanaan;
     const kasAwalPeriode = state.modalAwal;
-    const saldoKasAkhir = kasAwalPeriode + kenaikanBersihKas;
+    const saldoKasAkhirArusKas = kasAwalPeriode + kenaikanBersihKas;
 
+    if (document.getElementById("ak-kas-masuk")) document.getElementById("ak-kas-masuk").textContent = rupiah(kasMasukPelanggan);
+    if (document.getElementById("ak-kas-keluar-beban")) document.getElementById("ak-kas-keluar-beban").textContent = kurungRupiah(totalBebanManual);
+    if (document.getElementById("ak-operasi-bersih")) document.getElementById("ak-operasi-bersih").textContent = arusKasOperasi < 0 ? kurungRupiah(arusKasOperasi) : rupiah(arusKasOperasi);
+
+    if (document.getElementById("ak-kas-investasi")) document.getElementById("ak-kas-investasi").textContent = arusKasInvestasi < 0 ? kurungRupiah(arusKasInvestasi) : rupiah(arusKasInvestasi);
+    if (document.getElementById("ak-investasi-bersih")) document.getElementById("ak-investasi-bersih").textContent = arusKasInvestasi < 0 ? kurungRupiah(arusKasInvestasi) : rupiah(arusKasInvestasi);
+
+    if (document.getElementById("ak-modal-setoran")) document.getElementById("ak-modal-setoran").textContent = rupiah(setoranModalJurnal);
+    if (document.getElementById("ak-prive")) document.getElementById("ak-prive").textContent = kurungRupiah(totalPrive);
+    if (document.getElementById("ak-pendanaan-bersih")) document.getElementById("ak-pendanaan-bersih").textContent = arusKasPendanaan < 0 ? kurungRupiah(arusKasPendanaan) : rupiah(arusKasPendanaan);
+
+    if (document.getElementById("ak-kenaikan-bersih")) document.getElementById("ak-kenaikan-bersih").textContent = kenaikanBersihKas < 0 ? kurungRupiah(kenaikanBersihKas) : rupiah(kenaikanBersihKas);
+    if (document.getElementById("ak-kas-awal")) document.getElementById("ak-kas-awal").textContent = rupiah(kasAwalPeriode);
+    if (document.getElementById("ak-saldo-akhir")) document.getElementById("ak-saldo-akhir").textContent = rupiah(saldoKasAkhirArusKas);
+
+    // 4. Laporan Posisi Keuangan (Neraca)
+    const saldoKasAkhir = saldoKasAkhirArusKas;
     const totalAset = saldoKasAkhir + piutangNeto + nilaiAsetTetap;
     const totalPasiva = totalUtang + modalAkhir;
 
@@ -690,22 +710,6 @@ function renderLaporan() {
             ? "✓ Posisi Keuangan Seimbang (Total Aset = Total Liabilitas & Ekuitas)"
             : `⚠ Selisih Neraca: ${rupiah(Math.abs(totalAset - totalPasiva))}`;
     }
-
-    // 4. Laporan Arus Kas Standar
-    if (document.getElementById("ak-kas-masuk")) document.getElementById("ak-kas-masuk").textContent = rupiah(kasMasukPelanggan);
-    if (document.getElementById("ak-kas-keluar-beban")) document.getElementById("ak-kas-keluar-beban").textContent = kurungRupiah(totalBebanManual);
-    if (document.getElementById("ak-operasi-bersih")) document.getElementById("ak-operasi-bersih").textContent = arusKasOperasi < 0 ? kurungRupiah(arusKasOperasi) : rupiah(arusKasOperasi);
-
-    if (document.getElementById("ak-kas-investasi")) document.getElementById("ak-kas-investasi").textContent = arusKasInvestasi < 0 ? kurungRupiah(arusKasInvestasi) : rupiah(arusKasInvestasi);
-    if (document.getElementById("ak-investasi-bersih")) document.getElementById("ak-investasi-bersih").textContent = arusKasInvestasi < 0 ? kurungRupiah(arusKasInvestasi) : rupiah(arusKasInvestasi);
-
-    if (document.getElementById("ak-modal-setoran")) document.getElementById("ak-modal-setoran").textContent = rupiah(setoranModalJurnal);
-    if (document.getElementById("ak-prive")) document.getElementById("ak-prive").textContent = kurungRupiah(totalPrive);
-    if (document.getElementById("ak-pendanaan-bersih")) document.getElementById("ak-pendanaan-bersih").textContent = arusKasPendanaan < 0 ? kurungRupiah(arusKasPendanaan) : rupiah(arusKasPendanaan);
-
-    if (document.getElementById("ak-kenaikan-bersih")) document.getElementById("ak-kenaikan-bersih").textContent = kenaikanBersihKas < 0 ? kurungRupiah(kenaikanBersihKas) : rupiah(kenaikanBersihKas);
-    if (document.getElementById("ak-kas-awal")) document.getElementById("ak-kas-awal").textContent = rupiah(kasAwalPeriode);
-    if (document.getElementById("ak-saldo-akhir")) document.getElementById("ak-saldo-akhir").textContent = rupiah(saldoKasAkhir);
 
     const rowsKasHTML = state.pembayaran.map(item => {
         const trx = state.transaksi.find(t => String(t.id_transaksi) === String(item.id_transaksi));
