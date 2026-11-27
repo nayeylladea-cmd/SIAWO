@@ -29,14 +29,14 @@
             text-align: center;
         }
 
-        /* Tombol Aksi Tabel Lebih Rapi & Kompak */
         .action-group {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             gap: 5px;
             align-items: center;
         }
-        .action-group .btn-sm {
+        .action-group .btn-sm,
+        .btn-invoice-only {
             padding: 5px 9px !important;
             border-radius: 6px !important;
             font-size: 11px !important;
@@ -51,6 +51,7 @@
             display: inline-flex !important;
             align-items: center !important;
             gap: 4px !important;
+            white-space: nowrap;
             transition: 0.15s ease;
         }
         .action-group .btn-sm:hover {
@@ -58,21 +59,13 @@
             border-color: #d66d8e !important;
             color: #a84464 !important;
         }
-        .action-group .btn-sm.btn-invoice {
+        .btn-invoice-only {
             background: #eff6ff !important;
             border-color: #bfdbfe !important;
             color: #1d4ed8 !important;
         }
-        .action-group .btn-sm.btn-invoice:hover {
+        .btn-invoice-only:hover {
             background: #dbeafe !important;
-        }
-        .action-group .btn-sm.btn-pay {
-            background: #f0fdf4 !important;
-            border-color: #bbf7d0 !important;
-            color: #15803d !important;
-        }
-        .action-group .btn-sm.btn-pay:hover {
-            background: #dcfce7 !important;
         }
         .action-group .btn-sm.btn-danger {
             background: #fff5f5 !important;
@@ -83,7 +76,6 @@
             background: #fee2e2 !important;
         }
 
-        /* Tab Laporan Keuangan SAK EMKM */
         .report-tabs {
             display: flex;
             flex-wrap: wrap;
@@ -186,7 +178,6 @@
             white-space: nowrap;
         }
 
-        /* Modal Pratinjau Invoice Rapi & Anti-Tumpang Tindih */
         .modal-backdrop {
             position: fixed;
             inset: 0;
@@ -494,7 +485,6 @@
                     <div>
                         <p class="eyebrow">WELCOME TO SIAWO</p>
                         <h2>Manage every moment beautifully.</h2>
-                        <p>Alur cepat: <strong>1. Input Pelanggan</strong> → <strong>2. Buat Transaksi & Cetak Invoice</strong> → <strong>3. Catat Pembayaran</strong> → <strong>4. Cek Jurnal & Laporan SAK</strong>.</p>
                     </div>
                     <div class="banner-decoration">♡</div>
                 </div>
@@ -630,20 +620,7 @@
                             <h2>Paket Wedding</h2>
                             <p>Katalog paket layanan dan tarif dasar kontrak acara.</p>
                         </div>
-                        <button class="primary-button" id="tambah-paket" type="button">+ Tambah Paket</button>
                     </div>
-                    <form id="form-paket" class="data-form hidden">
-                        <input type="hidden" name="id_paket">
-                        <div class="form-grid">
-                            <label>Nama paket<input name="nama_paket" required placeholder="Contoh: Royal Intimate Package"></label>
-                            <label>Harga paket (Rp)<input name="harga" type="number" min="0" required placeholder="Contoh: 25000000"></label>
-                            <label class="full-width">Deskripsi fasilitas<textarea name="deskripsi" rows="3" placeholder="Rincian fasilitas dekorasi, WO, dokumentasi, dll."></textarea></label>
-                        </div>
-                        <div class="form-actions">
-                            <button class="primary-button" type="submit">Simpan Paket</button>
-                            <button class="secondary-button" type="button" data-cancel="paket">Batal</button>
-                        </div>
-                    </form>
                     <div class="paket-grid" id="paket-grid-container"></div>
                 </div>
             </section>
@@ -654,7 +631,7 @@
                     <div class="section-heading">
                         <div>
                             <h2>Transaksi Wedding & Invoice</h2>
-                            <p>Klik tombol <strong>Invoice</strong> di tabel untuk melihat dan mencetak tagihan resmi pelanggan.</p>
+                            <p>Klik tombol <strong>Invoice</strong> di kolom Invoice untuk melihat dan mencetak tagihan resmi pelanggan.</p>
                         </div>
                         <button class="primary-button" id="tambah-transaksi" type="button">+ Buat Transaksi</button>
                     </div>
@@ -691,7 +668,15 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>No. Inv</th><th>Pelanggan</th><th>Paket</th><th>Tanggal Acara</th><th>Total Kontrak</th><th>Sisa Tagihan</th><th>Status</th><th>Aksi & Invoice</th>
+                                    <th>No. Inv</th>
+                                    <th>Pelanggan</th>
+                                    <th>Paket</th>
+                                    <th>Tanggal Acara</th>
+                                    <th>Total Kontrak</th>
+                                    <th>Sisa Tagihan</th>
+                                    <th>Status</th>
+                                    <th>Invoice</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="tabel-transaksi"></tbody>
@@ -756,7 +741,7 @@
                     <div class="section-heading">
                         <div>
                             <h2>Jurnal Umum</h2>
-                            <p>Pencatatan ayat jurnal berpasangan (<em>double-entry</em>) otomatis dari kontrak & pembayaran, serta jurnal beban operasional.</p>
+                            <p>Pencatatan ayat jurnal berpasangan (<em>double-entry</em>) otomatis dari kontrak & pembayaran, serta jurnal beban/modal/aset.</p>
                         </div>
                         <button class="primary-button" id="tambah-jurnal-manual" type="button">+ Jurnal Beban / Penyesuaian</button>
                     </div>
@@ -806,6 +791,7 @@
                             <option value="Beban Perlengkapan & Dekorasi">
                             <option value="Beban Crew & Freelance">
                             <option value="Beban Operasional & Transportasi">
+                            <option value="Beban Pemasaran & Promosi">
                             <option value="Beban Kerugian Piutang">
                             <option value="Cadangan Kerugian Piutang">
                         </datalist>
@@ -896,7 +882,7 @@
                     <div class="section-heading" style="border-bottom: none; margin-bottom: 0;">
                         <div>
                             <h2>Laporan Keuangan (Standar SAK EMKM)</h2>
-                            <p>Disusun otomatis berdasarkan transaksi kontrak, penerimaan kas, penyisihan piutang, dan jurnal beban.</p>
+                            <p>Disusun otomatis berdasarkan transaksi kontrak, penerimaan kas, penyisihan piutang, dan jurnal beban/modal/aset.</p>
                         </div>
                         <button class="primary-button" type="button" onclick="window.print()">
                             <i class="fa-solid fa-print"></i> Cetak Laporan (A4)
@@ -1026,6 +1012,10 @@
                                     <td>Piutang Usaha Neto</td>
                                     <td class="nominal" id="nr-piutang-neto">Rp0</td>
                                 </tr>
+                                <tr class="indent">
+                                    <td>Peralatan Wedding & Aset Tetap</td>
+                                    <td class="nominal" id="nr-aset-tetap">Rp0</td>
+                                </tr>
                                 <tr class="grand-total">
                                     <td>TOTAL ASET</td>
                                     <td class="nominal" id="nr-total-aset">Rp0</td>
@@ -1050,7 +1040,6 @@
                     </div>
                 </div>
 
-                <!-- PANEL 4: LAPORAN ARUS KAS STANDAR SAK EMKM -->
                 <div id="panel-arus-kas" class="report-panel">
                     <div class="sak-statement">
                         <div class="sak-header">
