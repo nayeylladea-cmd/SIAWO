@@ -26,7 +26,9 @@ function buatDataSimulasiDefault() {
             { id_pelanggan: 102, nama_pelanggan: "Alya Rahma & Kevin Wijaya", no_telepon: "085711223344", email: "alya.kevin@gmail.com", alamat: "Jl. Sultan Agung No. 88, Semarang" },
             { id_pelanggan: 103, nama_pelanggan: "Nadia Kusuma & Reza Mahendra", no_telepon: "082199887766", email: "nadia.reza@gmail.com", alamat: "Perum Graha Estetika Blok C-12, Tembalang" },
             { id_pelanggan: 104, nama_pelanggan: "Salsa Maharani & Bagas Saputra", no_telepon: "081355667788", email: "salsa.bagas@gmail.com", alamat: "Jl. Pemuda No. 102, Semarang" },
-            { id_pelanggan: 105, nama_pelanggan: "Dinda Kirana & Farhan Hakim", no_telepon: "085644332211", email: "dinda.farhan@gmail.com", alamat: "Jl. Sisingamangaraja No. 29, Semarang" }
+            { id_pelanggan: 105, nama_pelanggan: "Dinda Kirana & Farhan Hakim", no_telepon: "085644332211", email: "dinda.farhan@gmail.com", alamat: "Jl. Sisingamangaraja No. 29, Semarang" },
+            { id_pelanggan: 106, nama_pelanggan: "Vania Aurelia & Raka Pratama", no_telepon: "081977665544", email: "vania.raka@gmail.com", alamat: "Jl. Gajahmada No. 64, Semarang" },
+            { id_pelanggan: 107, nama_pelanggan: "Tiara Anindita & Yoga Santoso", no_telepon: "085822334455", email: "tiara.yoga@gmail.com", alamat: "Jl. Setiabudi No. 19, Banyumanik, Semarang" }
         ],
         paket: [
             { id_paket: 1, nama_paket: "Intimate Garden Package", harga: 25000000, deskripsi: "Full WO Crew (6 orang), Dekorasi Akad & Resepsi Intimate (150 pax), MC, Makeup Pengantin, & Dokumentasi Foto." },
@@ -167,11 +169,6 @@ function muatModalAwal() {
         return angka(tersimpan);
     }
     return 50000000;
-}
-
-function simpanModalAwal(nilai) {
-    state.modalAwal = Math.max(angka(nilai), 0);
-    localStorage.setItem(STORAGE_MODAL_AWAL, String(state.modalAwal));
 }
 
 function getNamaPelanggan(id) {
@@ -920,8 +917,6 @@ async function muatSemuaData() {
         }
     } finally {
         sedangMemuat = false;
-        const inputModal = document.getElementById("input-modal-awal");
-        if (inputModal) inputModal.value = state.modalAwal;
         renderSemua();
     }
 }
@@ -974,13 +969,6 @@ function pasangEventListener() {
             btn.classList.add("active");
             document.getElementById(`panel-${tabKey}`)?.classList.add("active");
         });
-    });
-
-    document.getElementById("btn-simpan-modal")?.addEventListener("click", () => {
-        const nilai = angka(document.getElementById("input-modal-awal")?.value);
-        simpanModalAwal(nilai);
-        renderLaporan();
-        alert(`Saldo Kas & Modal Awal berhasil diterapkan: ${rupiah(state.modalAwal)}`);
     });
 
     document.getElementById("btn-close-invoice")?.addEventListener("click", tutupInvoiceModal);
