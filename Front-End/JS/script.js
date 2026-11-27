@@ -2,13 +2,14 @@
 
 /* =========================================
    SIAWO - SISTEM INFORMASI AKUNTANSI WEDDING ORGANIZER
-   Frontend JavaScript + Supabase + Standar Akuntansi (SAK EMKM)
+   Frontend JavaScript + Supabase + Data Simulasi Demo + SAK EMKM
    ========================================= */
 
 const SUPABASE_URL = "https://kkuwqdluicotbzgdmfjk.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Cs1-1HixNDSvTVVJyfp32Q_o1e94vZn";
 const STORAGE_JURNAL_MANUAL = "siawo_jurnal_manual_v1";
 const STORAGE_MODAL_AWAL = "siawo_modal_awal_v1";
+const STORAGE_DEMO_DATA = "siawo_demo_data_v1";
 
 const state = {
     pelanggan: [],
@@ -16,11 +17,180 @@ const state = {
     transaksi: [],
     pembayaran: [],
     jurnalManual: [],
-    modalAwal: 0
+    modalAwal: 50000000,
+    isDemoMode: false
 };
 
 let sedangMemuat = false;
 let grafikKeuangan = null;
+
+/* =========================================
+   DATA SIMULASI REALISTIS LUNELLE WEDDING
+   (Otomatis aktif jika Supabase kosong)
+========================================= */
+function buatDataSimulasiDefault() {
+    return {
+        pelanggan: [
+            {
+                id_pelanggan: 101,
+                nama_pelanggan: "Clarissa Putri & Dimas Pratama",
+                no_telepon: "081234567890",
+                email: "clarissa.dimas@gmail.com",
+                alamat: "Jl. Pandanaran No. 45, Semarang"
+            },
+            {
+                id_pelanggan: 102,
+                nama_pelanggan: "Alya Rahma & Kevin Wijaya",
+                no_telepon: "085711223344",
+                email: "alya.kevin@gmail.com",
+                alamat: "Jl. Sultan Agung No. 88, Semarang"
+            },
+            {
+                id_pelanggan: 103,
+                nama_pelanggan: "Nadia Kusuma & Reza Mahendra",
+                no_telepon: "082199887766",
+                email: "nadia.reza@gmail.com",
+                alamat: "Perum Graha Estetika Blok C-12, Tembalang"
+            },
+            {
+                id_pelanggan: 104,
+                nama_pelanggan: "Salsa Maharani & Bagas Saputra",
+                no_telepon: "081355667788",
+                email: "salsa.bagas@gmail.com",
+                alamat: "Jl. Pemuda No. 102, Semarang"
+            }
+        ],
+        paket: [
+            {
+                id_paket: 1,
+                nama_paket: "Intimate Garden Package",
+                harga: 25000000,
+                deskripsi: "Full WO Crew (6 orang), Dekorasi Akad & Resepsi Intimate (150 pax), MC, Makeup Pengantin, & Dokumentasi Foto."
+            },
+            {
+                id_paket: 2,
+                nama_paket: "Royal Elegance Package",
+                harga: 45000000,
+                deskripsi: "Full WO Crew (10 orang), Dekorasi Ballroom Mewah (300 pax), Band Akustik, Foto & Cinematic Video, serta Buku Tamu Digital."
+            },
+            {
+                id_paket: 3,
+                nama_paket: "Grand Luxury Wedding",
+                harga: 75000000,
+                deskripsi: "All-In Luxury Wedding (500 pax), Dekorasi Custom Full Bunga Segar, 12 Crew WO, Photobooth, Live Streaming, & Prewedding."
+            }
+        ],
+        transaksi: [
+            {
+                id_transaksi: 201,
+                id_pelanggan: 101,
+                id_paket: 2,
+                tanggal_transaksi: "2026-09-10",
+                tanggal_acara: "2026-10-18",
+                total_transaksi: 45000000,
+                status: "Lunas"
+            },
+            {
+                id_transaksi: 202,
+                id_pelanggan: 102,
+                id_paket: 3,
+                tanggal_transaksi: "2026-10-05",
+                tanggal_acara: "2026-11-12",
+                total_transaksi: 75000000,
+                status: "Berlangsung"
+            },
+            {
+                id_transaksi: 203,
+                id_pelanggan: 103,
+                id_paket: 1,
+                tanggal_transaksi: "2026-11-01",
+                tanggal_acara: "2026-12-20",
+                total_transaksi: 25000000,
+                status: "Berlangsung"
+            },
+            {
+                id_transaksi: 204,
+                id_pelanggan: 104,
+                id_paket: 2,
+                tanggal_transaksi: "2026-11-15",
+                tanggal_acara: "2027-01-24",
+                total_transaksi: 45000000,
+                status: "Menunggu Pembayaran"
+            }
+        ],
+        pembayaran: [
+            {
+                id_pembayaran: 301,
+                id_transaksi: 201,
+                tanggal_pembayaran: "2026-09-12",
+                jumlah_bayar: 15000000,
+                metode_pembayaran: "Transfer Bank",
+                keterangan: "Booking Fee & DP 1 (33%)"
+            },
+            {
+                id_pembayaran: 302,
+                id_transaksi: 201,
+                tanggal_pembayaran: "2026-10-10",
+                jumlah_bayar: 30000000,
+                metode_pembayaran: "Transfer Bank",
+                keterangan: "Pelunasan H-7 Acara"
+            },
+            {
+                id_pembayaran: 303,
+                id_transaksi: 202,
+                tanggal_pembayaran: "2026-10-08",
+                jumlah_bayar: 30000000,
+                metode_pembayaran: "Transfer Bank",
+                keterangan: "DP 40% Paket Grand Luxury"
+            },
+            {
+                id_pembayaran: 304,
+                id_transaksi: 202,
+                tanggal_pembayaran: "2026-11-05",
+                jumlah_bayar: 25000000,
+                metode_pembayaran: "QRIS",
+                keterangan: "Termin ke-2 (Sisa Rp20.000.000)"
+            },
+            {
+                id_pembayaran: 305,
+                id_transaksi: 203,
+                tanggal_pembayaran: "2026-11-04",
+                jumlah_bayar: 10000000,
+                metode_pembayaran: "Transfer Bank",
+                keterangan: "DP Awal 40% Intimate Package"
+            }
+        ],
+        jurnalManual: [
+            {
+                id_jurnal: "JRN-DEMO-1",
+                tanggal_jurnal: "2026-10-15",
+                no_referensi: "BKK-001",
+                akun_debit: "Beban Perlengkapan & Dekorasi",
+                akun_kredit: "Kas",
+                nominal_jurnal: 18500000,
+                keterangan_jurnal: "Pembayaran vendor dekorasi bunga & lighting acara Clarissa & Dimas"
+            },
+            {
+                id_jurnal: "JRN-DEMO-2",
+                tanggal_jurnal: "2026-10-19",
+                no_referensi: "BKK-002",
+                akun_debit: "Beban Crew & Freelance",
+                akun_kredit: "Kas",
+                nominal_jurnal: 6500000,
+                keterangan_jurnal: "Honorarium 10 crew WO, koordinator lapangan & MC"
+            },
+            {
+                id_jurnal: "JRN-DEMO-3",
+                tanggal_jurnal: "2026-11-10",
+                no_referensi: "BKK-003",
+                akun_debit: "Beban Operasional & Transportasi",
+                akun_kredit: "Kas",
+                nominal_jurnal: 2400000,
+                keterangan_jurnal: "Biaya transportasi loading barang, konsumsi tim & administrasi kantor"
+            }
+        ]
+    };
+}
 
 function angka(nilai) {
     const hasil = Number(nilai);
@@ -63,6 +233,43 @@ function tanggalIndonesia(nilai) {
     });
 }
 
+function simpanDemoKeStorage() {
+    if (!state.isDemoMode) return;
+    try {
+        localStorage.setItem(STORAGE_DEMO_DATA, JSON.stringify({
+            pelanggan: state.pelanggan,
+            paket: state.paket,
+            transaksi: state.transaksi,
+            pembayaran: state.pembayaran
+        }));
+    } catch (e) {
+        console.error("Gagal menyimpan state demo:", e);
+    }
+}
+
+function muatDataSimulasiSekarang(tampilkanNotif = true) {
+    const demo = buatDataSimulasiDefault();
+    state.pelanggan = demo.pelanggan;
+    state.paket = demo.paket;
+    state.transaksi = demo.transaksi;
+    state.pembayaran = demo.pembayaran;
+    state.jurnalManual = demo.jurnalManual;
+    state.modalAwal = 50000000;
+    state.isDemoMode = true;
+
+    localStorage.setItem(STORAGE_JURNAL_MANUAL, JSON.stringify(state.jurnalManual));
+    localStorage.setItem(STORAGE_MODAL_AWAL, String(state.modalAwal));
+    simpanDemoKeStorage();
+
+    const inputModal = document.getElementById("input-modal-awal");
+    if (inputModal) inputModal.value = state.modalAwal;
+
+    renderAll();
+    if (tampilkanNotif) {
+        tampilkanPesan("Data simulasi Lunelle Wedding berhasil dimuat ke seluruh modul & laporan!");
+    }
+}
+
 function loadJurnalManual() {
     try {
         const raw = localStorage.getItem(STORAGE_JURNAL_MANUAL);
@@ -83,7 +290,7 @@ function simpanJurnalManualStorage() {
 
 function loadModalAwal() {
     const raw = localStorage.getItem(STORAGE_MODAL_AWAL);
-    return raw !== null ? angka(raw) : 50000000; // Default Rp50.000.000 agar laporan langsung informatif
+    return raw !== null ? angka(raw) : 50000000;
 }
 
 function simpanModalAwal(nilai) {
@@ -106,7 +313,7 @@ function tampilkanPesan(pesan, jenis = "success") {
             background: "#ffffff",
             color: "#333333",
             boxShadow: "0 4px 20px rgba(0,0,0,.15)",
-            maxWidth: "min(380px, calc(100vw - 40px))",
+            maxWidth: "min(390px, calc(100vw - 40px))",
             fontSize: "13.5px",
             fontWeight: "500"
         });
@@ -198,20 +405,43 @@ async function loadAllData() {
             supabaseRequest("pembayaran")
         ]);
 
-        state.pelanggan = getRows(pelanggan);
-        state.paket = getRows(paket);
-        state.transaksi = getRows(transaksi);
-        state.pembayaran = getRows(pembayaran);
-        state.jurnalManual = loadJurnalManual();
-        state.modalAwal = loadModalAwal();
+        const rowsPelanggan = getRows(pelanggan);
+        const rowsPaket = getRows(paket);
+        const rowsTransaksi = getRows(transaksi);
+        const rowsPembayaran = getRows(pembayaran);
+
+        // Jika database Supabase kosong, otomatis aktifkan Data Simulasi Demo
+        if (rowsPelanggan.length === 0 && rowsTransaksi.length === 0) {
+            const savedDemoRaw = localStorage.getItem(STORAGE_DEMO_DATA);
+            if (savedDemoRaw) {
+                const parsedDemo = JSON.parse(savedDemoRaw);
+                state.pelanggan = parsedDemo.pelanggan || [];
+                state.paket = parsedDemo.paket || [];
+                state.transaksi = parsedDemo.transaksi || [];
+                state.pembayaran = parsedDemo.pembayaran || [];
+                state.jurnalManual = loadJurnalManual();
+                state.modalAwal = loadModalAwal();
+                state.isDemoMode = true;
+                renderAll();
+            } else {
+                muatDataSimulasiSekarang(false);
+            }
+        } else {
+            state.pelanggan = rowsPelanggan;
+            state.paket = rowsPaket;
+            state.transaksi = rowsTransaksi;
+            state.pembayaran = rowsPembayaran;
+            state.jurnalManual = loadJurnalManual();
+            state.modalAwal = loadModalAwal();
+            state.isDemoMode = false;
+            renderAll();
+        }
 
         const inputModal = document.getElementById("input-modal-awal");
         if (inputModal) inputModal.value = state.modalAwal;
-
-        renderAll();
     } catch (error) {
-        console.error("Gagal memuat data:", error);
-        tampilkanPesan("Data gagal dimuat: " + error.message, "error");
+        console.warn("Supabase tidak merespons, beralih ke mode simulasi:", error);
+        muatDataSimulasiSekarang(false);
     } finally {
         sedangMemuat = false;
     }
@@ -291,7 +521,7 @@ function setIsiTabel(id, html, colspan = 1) {
 }
 
 /* =========================================
-   FITUR CETAK INVOICE PELANGGAN
+   FITUR PRATINJAU & CETAK INVOICE PELANGGAN
 ========================================= */
 function bukaInvoiceModal(idTransaksi) {
     const trx = state.transaksi.find(t => String(t.id_transaksi) === String(idTransaksi));
@@ -309,7 +539,6 @@ function bukaInvoiceModal(idTransaksi) {
     const sisaTagihan = Math.max(totalKontrak - totalDibayar, 0);
     const isLunas = sisaTagihan <= 0 && totalKontrak > 0;
 
-    // Header & Nomor Invoice
     const nomorInv = `INV/LW/${new Date().getFullYear()}/${String(trx.id_transaksi).padStart(4, "0")}`;
     document.getElementById("inv-number").textContent = nomorInv;
     document.getElementById("inv-issue-date").textContent = tanggalIndonesia(trx.tanggal_transaksi || new Date().toISOString().slice(0, 10));
@@ -319,19 +548,16 @@ function bukaInvoiceModal(idTransaksi) {
     statusBadge.textContent = isLunas ? "LUNAS (PAID)" : "BELUM LUNAS (OUTSTANDING)";
     statusBadge.className = `inv-status-stamp ${isLunas ? "lunas" : "belum"}`;
 
-    // Data Klien
     document.getElementById("inv-client-name").textContent = pelanggan.nama_pelanggan || "Pelanggan Umum";
     document.getElementById("inv-client-phone").textContent = pelanggan.no_telepon ? `Telp/WA: ${pelanggan.no_telepon}` : "-";
     document.getElementById("inv-client-email").textContent = pelanggan.email || "-";
     document.getElementById("inv-client-address").textContent = pelanggan.alamat || "-";
 
-    // Rincian Paket
     document.getElementById("inv-package-name").textContent = paket.nama_paket || "Paket Layanan Wedding";
     document.getElementById("inv-package-desc").textContent = paket.deskripsi || "Layanan koordinasi & manajemen acara pernikahan.";
     document.getElementById("inv-package-price").textContent = rupiah(totalKontrak);
     document.getElementById("inv-package-total").textContent = rupiah(totalKontrak);
 
-    // Riwayat Pembayaran
     const tbodyHistory = document.getElementById("inv-payment-history");
     if (riwayatBayar.length === 0) {
         tbodyHistory.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888;">Belum ada pembayaran masuk.</td></tr>`;
@@ -346,7 +572,6 @@ function bukaInvoiceModal(idTransaksi) {
         `).join("");
     }
 
-    // Ringkasan Total
     document.getElementById("inv-subtotal").textContent = rupiah(totalKontrak);
     document.getElementById("inv-paid").textContent = rupiah(totalDibayar);
     document.getElementById("inv-balance").textContent = rupiah(sisaTagihan);
@@ -356,15 +581,136 @@ function bukaInvoiceModal(idTransaksi) {
 
 function tutupInvoiceModal() {
     document.getElementById("invoice-modal").classList.add("hidden");
-    document.body.classList.remove("printing-invoice");
 }
 
 function cetakInvoiceSekarang() {
-    document.body.classList.add("printing-invoice");
-    window.print();
-    setTimeout(() => {
-        document.body.classList.remove("printing-invoice");
-    }, 500);
+    const isiInvoice = document.getElementById("invoice-printable-area")?.innerHTML;
+    const noInv = document.getElementById("inv-number")?.textContent || "Invoice";
+    if (!isiInvoice) return;
+
+    const jendelaPrint = window.open("", "_blank", "width=900,height=750");
+    if (!jendelaPrint) {
+        tampilkanPesan("Pop-up diblokir browser. Izinkan pop-up untuk mencetak invoice.", "error");
+        return;
+    }
+
+    jendelaPrint.document.write(`
+        <!DOCTYPE html>
+        <html lang="id">
+        <head>
+            <meta charset="UTF-8">
+            <title>${escapeHTML(noInv)} - Lunelle Wedding</title>
+            <style>
+                * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                @page { size: A4; margin: 1.4cm; }
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    color: #222;
+                    margin: 0;
+                    padding: 10px;
+                    background: #fff;
+                }
+                .inv-top {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    border-bottom: 2.5px solid #d66d8e;
+                    padding-bottom: 16px;
+                    margin-bottom: 22px;
+                }
+                .inv-brand h2 { margin: 0; color: #a84464; font-size: 22px; letter-spacing: 0.04em; }
+                .inv-brand p { margin: 3px 0 0; font-size: 12px; color: #555; }
+                .inv-meta { text-align: right; }
+                .inv-meta h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: 0.1em; color: #222; }
+                .inv-meta p { margin: 2px 0; font-size: 12.5px; color: #333; }
+                .inv-status-stamp {
+                    display: inline-block;
+                    margin-top: 6px;
+                    padding: 4px 12px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                }
+                .inv-status-stamp.lunas { background: #dcfce7; color: #15803d; border: 1.5px solid #16a34a; }
+                .inv-status-stamp.belum { background: #fef3c7; color: #b45309; border: 1.5px solid #d97706; }
+                .inv-grid-info {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 18px;
+                    margin-bottom: 22px;
+                    font-size: 12.5px;
+                }
+                .inv-info-box {
+                    background: #fdf9fa;
+                    border: 1px solid #ead4dc;
+                    border-radius: 8px;
+                    padding: 12px 16px;
+                }
+                .inv-info-box h4 {
+                    margin: 0 0 6px;
+                    font-size: 10.5px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                    color: #9e7b86;
+                }
+                .inv-info-box p { margin: 3px 0; color: #222; }
+                .inv-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 20px;
+                    font-size: 12.5px;
+                }
+                .inv-table th {
+                    background: #fdf2f6;
+                    color: #7d3149;
+                    text-align: left;
+                    padding: 9px 11px;
+                    border-top: 1px solid #e5c6d0;
+                    border-bottom: 1px solid #e5c6d0;
+                }
+                .inv-table td {
+                    padding: 9px 11px;
+                    border-bottom: 1px solid #f0e1e6;
+                }
+                .inv-summary { width: 310px; margin-left: auto; font-size: 13px; }
+                .inv-summary-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 6px 0;
+                    border-bottom: 1px dashed #dcc6ce;
+                }
+                .inv-summary-row.total {
+                    font-weight: 800;
+                    font-size: 15px;
+                    color: #a84464;
+                    border-top: 2px solid #222;
+                    border-bottom: 2px solid #222;
+                    padding: 9px 0;
+                    margin-top: 4px;
+                }
+                .inv-footer {
+                    margin-top: 40px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                    font-size: 12px;
+                    color: #444;
+                }
+            </style>
+        </head>
+        <body>
+            ${isiInvoice}
+            <script>
+                window.onload = function() {
+                    window.focus();
+                    window.print();
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    jendelaPrint.document.close();
 }
 
 /* =========================================
@@ -373,7 +719,6 @@ function cetakInvoiceSekarang() {
 function buildDaftarJurnal() {
     const entri = [];
 
-    // 1. Jurnal dari Transaksi Kontrak
     state.transaksi.forEach((trx, index) => {
         const nominal = angka(trx.total_transaksi);
         if (nominal <= 0) return;
@@ -390,7 +735,6 @@ function buildDaftarJurnal() {
         });
     });
 
-    // 2. Jurnal dari Pembayaran Masuk
     state.pembayaran.forEach((byr, index) => {
         const nominal = angka(byr.jumlah_bayar);
         if (nominal <= 0) return;
@@ -411,7 +755,6 @@ function buildDaftarJurnal() {
         });
     });
 
-    // 3. Jurnal Manual / Beban / Penyesuaian
     state.jurnalManual.forEach((jrn, index) => {
         const nominal = angka(jrn.nominal_jurnal);
         if (nominal <= 0) return;
@@ -455,7 +798,7 @@ function renderJurnal() {
             ? `<span style="font-size:10px; padding:2px 7px; border-radius:10px; background:#eff6ff; color:#1d4ed8; font-weight:600;">Transaksi</span>`
             : item.jenis === "pembayaran"
                 ? `<span style="font-size:10px; padding:2px 7px; border-radius:10px; background:#f0fdf4; color:#198754; font-weight:600;">Pembayaran</span>`
-                : `<span style="font-size:10px; padding:2px 7px; border-radius:10px; background:#fdf2f8; color:#be185d; font-weight:600;">Penyesuaian</span>`;
+                : `<span style="font-size:10px; padding:2px 7px; border-radius:10px; background:#fdf2f8; color:#be185d; font-weight:600;">Beban/Penyesuaian</span>`;
 
         const tombolHapusManual = item.isManual
             ? `<button type="button" class="btn-sm btn-danger" data-delete-jurnal="${escapeHTML(item.idManual)}" style="margin-left:8px; padding:2px 7px; font-size:10.5px;">Hapus</button>`
@@ -820,10 +1163,6 @@ function renderPiutang() {
 
 /* =========================================
    LAPORAN KEUANGAN STANDAR AKUNTANSI (SAK EMKM)
-   1. Laba Rugi
-   2. Perubahan Ekuitas
-   3. Posisi Keuangan (Neraca)
-   4. Arus Kas
 ========================================= */
 function renderLaporan() {
     const hariIniTeks = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
@@ -832,14 +1171,12 @@ function renderLaporan() {
     document.querySelectorAll(".tanggal-cetak-teks").forEach(el => el.textContent = hariIniTeks);
     document.querySelectorAll(".periode-laporan-teks").forEach(el => el.textContent = tahunTeks);
 
-    // 1. Komponen Pendapatan & Kas dari Database Utama
     const pendapatanJasa = state.transaksi.reduce((sum, t) => sum + angka(t.total_transaksi), 0);
     const kasMasukPelanggan = state.pembayaran.reduce((sum, p) => sum + angka(p.jumlah_bayar), 0);
     const piutangBruto = state.transaksi.reduce((sum, t) => sum + getPiutang(t), 0);
     const cadanganPiutang = hitungTotalPenyisihanPiutang();
     const piutangNeto = Math.max(piutangBruto - cadanganPiutang, 0);
 
-    // 2. Komponen Beban, Prive, Utang, & Setoran Modal Tambahan dari Jurnal Manual
     const kelompokBeban = {};
     let totalBebanManual = 0;
     let totalPrive = 0;
@@ -851,30 +1188,18 @@ function renderLaporan() {
         const debitLower = (jrn.akun_debit || "").toLowerCase();
         const kreditLower = (jrn.akun_kredit || "").toLowerCase();
 
-        // Beban Operasional (kecuali beban kerugian piutang yang sudah dihitung otomatis dari aging)
         if (debitLower.includes("beban") && !debitLower.includes("kerugian piutang")) {
             const namaAkun = jrn.akun_debit.trim();
             kelompokBeban[namaAkun] = (kelompokBeban[namaAkun] || 0) + nominal;
             totalBebanManual += nominal;
         }
-        // Prive Pemilik
-        if (debitLower.includes("prive")) {
-            totalPrive += nominal;
-        }
-        // Utang Usaha
-        if (kreditLower.includes("utang")) {
-            totalUtang += nominal;
-        }
-        if (debitLower.includes("utang")) {
-            totalUtang = Math.max(totalUtang - nominal, 0);
-        }
-        // Tambahan Modal dari Jurnal
-        if (kreditLower.includes("modal")) {
-            setoranModalJurnal += nominal;
-        }
+        if (debitLower.includes("prive")) totalPrive += nominal;
+        if (kreditLower.includes("utang")) totalUtang += nominal;
+        if (debitLower.includes("utang")) totalUtang = Math.max(totalUtang - nominal, 0);
+        if (kreditLower.includes("modal")) setoranModalJurnal += nominal;
     });
 
-    // --- A. LAPORAN LABA RUGI ---
+    // 1. Laporan Laba Rugi
     const totalBeban = totalBebanManual + cadanganPiutang;
     const labaBersih = pendapatanJasa - totalBeban;
 
@@ -900,48 +1225,32 @@ function renderLaporan() {
         elLabaBersih.style.color = labaBersih < 0 ? "#dc2626" : "#15803d";
     }
 
-    // --- B. LAPORAN PERUBAHAN EKUITAS ---
+    // 2. Laporan Perubahan Ekuitas
     const modalAwalTotal = state.modalAwal + setoranModalJurnal;
     const kenaikanEkuitas = labaBersih - totalPrive;
     const modalAkhir = modalAwalTotal + kenaikanEkuitas;
 
-    const elPeModalAwal = document.getElementById("pe-modal-awal");
-    const elPeLaba = document.getElementById("pe-laba-bersih");
-    const elPePrive = document.getElementById("pe-prive");
-    const elPeKenaikan = document.getElementById("pe-kenaikan-ekuitas");
-    const elPeModalAkhir = document.getElementById("pe-modal-akhir");
+    if (document.getElementById("pe-modal-awal")) document.getElementById("pe-modal-awal").textContent = rupiah(modalAwalTotal);
+    if (document.getElementById("pe-laba-bersih")) document.getElementById("pe-laba-bersih").textContent = labaBersih < 0 ? kurungRupiah(labaBersih) : rupiah(labaBersih);
+    if (document.getElementById("pe-prive")) document.getElementById("pe-prive").textContent = kurungRupiah(totalPrive);
+    if (document.getElementById("pe-kenaikan-ekuitas")) document.getElementById("pe-kenaikan-ekuitas").textContent = kenaikanEkuitas < 0 ? kurungRupiah(kenaikanEkuitas) : rupiah(kenaikanEkuitas);
+    if (document.getElementById("pe-modal-akhir")) document.getElementById("pe-modal-akhir").textContent = rupiah(modalAkhir);
 
-    if (elPeModalAwal) elPeModalAwal.textContent = rupiah(modalAwalTotal);
-    if (elPeLaba) elPeLaba.textContent = labaBersih < 0 ? kurungRupiah(labaBersih) : rupiah(labaBersih);
-    if (elPePrive) elPePrive.textContent = kurungRupiah(totalPrive);
-    if (elPeKenaikan) elPeKenaikan.textContent = kenaikanEkuitas < 0 ? kurungRupiah(kenaikanEkuitas) : rupiah(kenaikanEkuitas);
-    if (elPeModalAkhir) elPeModalAkhir.textContent = rupiah(modalAkhir);
-
-    // --- C. LAPORAN POSISI KEUANGAN (NERACA) ---
-    // Persamaan Akuntansi: Kas + Piutang Neto = Utang + Modal Akhir
-    // Sehingga Saldo Kas = Modal Awal + Kas Masuk Pelanggan - Beban Tunai - Prive + Utang
+    // 3. Laporan Posisi Keuangan (Neraca)
     const saldoKasAkhir = modalAwalTotal + kasMasukPelanggan - totalBebanManual - totalPrive + totalUtang;
     const totalAset = saldoKasAkhir + piutangNeto;
     const totalPasiva = totalUtang + modalAkhir;
 
-    const elNrKas = document.getElementById("nr-kas");
-    const elNrPiutangBruto = document.getElementById("nr-piutang-bruto");
-    const elNrCadangan = document.getElementById("nr-cadangan-piutang");
-    const elNrPiutangNeto = document.getElementById("nr-piutang-neto");
-    const elNrTotalAset = document.getElementById("nr-total-aset");
-    const elNrLiabilitas = document.getElementById("nr-liabilitas");
-    const elNrEkuitasAkhir = document.getElementById("nr-ekuitas-akhir");
-    const elNrTotalPasiva = document.getElementById("nr-total-pasiva");
-    const elNrBalance = document.getElementById("nr-status-balance");
+    if (document.getElementById("nr-kas")) document.getElementById("nr-kas").textContent = rupiah(saldoKasAkhir);
+    if (document.getElementById("nr-piutang-bruto")) document.getElementById("nr-piutang-bruto").textContent = rupiah(piutangBruto);
+    if (document.getElementById("nr-cadangan-piutang")) document.getElementById("nr-cadangan-piutang").textContent = kurungRupiah(cadanganPiutang);
+    if (document.getElementById("nr-piutang-neto")) document.getElementById("nr-piutang-neto").textContent = rupiah(piutangNeto);
+    if (document.getElementById("nr-total-aset")) document.getElementById("nr-total-aset").textContent = rupiah(totalAset);
+    if (document.getElementById("nr-liabilitas")) document.getElementById("nr-liabilitas").textContent = rupiah(totalUtang);
+    if (document.getElementById("nr-ekuitas-akhir")) document.getElementById("nr-ekuitas-akhir").textContent = rupiah(modalAkhir);
+    if (document.getElementById("nr-total-pasiva")) document.getElementById("nr-total-pasiva").textContent = rupiah(totalPasiva);
 
-    if (elNrKas) elNrKas.textContent = rupiah(saldoKasAkhir);
-    if (elNrPiutangBruto) elNrPiutangBruto.textContent = rupiah(piutangBruto);
-    if (elNrCadangan) elNrCadangan.textContent = kurungRupiah(cadanganPiutang);
-    if (elNrPiutangNeto) elNrPiutangNeto.textContent = rupiah(piutangNeto);
-    if (elNrTotalAset) elNrTotalAset.textContent = rupiah(totalAset);
-    if (elNrLiabilitas) elNrLiabilitas.textContent = rupiah(totalUtang);
-    if (elNrEkuitasAkhir) elNrEkuitasAkhir.textContent = rupiah(modalAkhir);
-    if (elNrTotalPasiva) elNrTotalPasiva.textContent = rupiah(totalPasiva);
+    const elNrBalance = document.getElementById("nr-status-balance");
     if (elNrBalance) {
         const isBalance = Math.round(totalAset) === Math.round(totalPasiva);
         elNrBalance.textContent = isBalance
@@ -949,27 +1258,18 @@ function renderLaporan() {
             : `⚠ Selisih Neraca: ${rupiah(Math.abs(totalAset - totalPasiva))}`;
     }
 
-    // --- D. LAPORAN ARUS KAS ---
+    // 4. Laporan Arus Kas
     const arusKasOperasi = kasMasukPelanggan - totalBebanManual;
     const arusKasPendanaan = modalAwalTotal - totalPrive;
 
-    const elAkMasuk = document.getElementById("ak-kas-masuk");
-    const elAkKeluar = document.getElementById("ak-kas-keluar-beban");
-    const elAkOperasi = document.getElementById("ak-operasi-bersih");
-    const elAkModal = document.getElementById("ak-modal-awal");
-    const elAkPrive = document.getElementById("ak-prive");
-    const elAkPendanaan = document.getElementById("ak-pendanaan-bersih");
-    const elAkSaldoAkhir = document.getElementById("ak-saldo-akhir");
+    if (document.getElementById("ak-kas-masuk")) document.getElementById("ak-kas-masuk").textContent = rupiah(kasMasukPelanggan);
+    if (document.getElementById("ak-kas-keluar-beban")) document.getElementById("ak-kas-keluar-beban").textContent = kurungRupiah(totalBebanManual);
+    if (document.getElementById("ak-operasi-bersih")) document.getElementById("ak-operasi-bersih").textContent = rupiah(arusKasOperasi);
+    if (document.getElementById("ak-modal-awal")) document.getElementById("ak-modal-awal").textContent = rupiah(modalAwalTotal);
+    if (document.getElementById("ak-prive")) document.getElementById("ak-prive").textContent = kurungRupiah(totalPrive);
+    if (document.getElementById("ak-pendanaan-bersih")) document.getElementById("ak-pendanaan-bersih").textContent = rupiah(arusKasPendanaan);
+    if (document.getElementById("ak-saldo-akhir")) document.getElementById("ak-saldo-akhir").textContent = rupiah(arusKasOperasi + arusKasPendanaan);
 
-    if (elAkMasuk) elAkMasuk.textContent = rupiah(kasMasukPelanggan);
-    if (elAkKeluar) elAkKeluar.textContent = kurungRupiah(totalBebanManual);
-    if (elAkOperasi) elAkOperasi.textContent = rupiah(arusKasOperasi);
-    if (elAkModal) elAkModal.textContent = rupiah(modalAwalTotal);
-    if (elAkPrive) elAkPrive.textContent = kurungRupiah(totalPrive);
-    if (elAkPendanaan) elAkPendanaan.textContent = rupiah(arusKasPendanaan);
-    if (elAkSaldoAkhir) elAkSaldoAkhir.textContent = rupiah(arusKasOperasi + arusKasPendanaan);
-
-    // Tabel Rincian Kas Masuk
     const rowsKasHTML = state.pembayaran.map(item => {
         const trx = state.transaksi.find(t => String(t.id_transaksi) === String(item.id_transaksi));
         const nama = trx ? getNamaPelanggan(trx.id_pelanggan) : "-";
@@ -1070,7 +1370,6 @@ function setupNavigation() {
             }
         }
 
-        // Tab Laporan Keuangan (Laba Rugi, Perubahan Ekuitas, Posisi Keuangan, Arus Kas)
         const tombolTab = event.target.closest("[data-report-tab]");
         if (tombolTab) {
             const tabKey = tombolTab.dataset.reportTab;
@@ -1116,6 +1415,9 @@ function tampilkanForm(formID, tampil = true) {
     pembungkus.classList.toggle("hidden", !tampil);
 }
 
+/* =========================================
+   CRUD (MENDUKUNG SUPABASE & SIMULASI LOKAL)
+========================================= */
 async function savePelanggan(event) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -1123,6 +1425,21 @@ async function savePelanggan(event) {
     const payload = dataForm(form, ["nama_pelanggan", "no_telepon", "email", "alamat"]);
 
     try {
+        if (state.isDemoMode) {
+            if (id) {
+                const idx = state.pelanggan.findIndex(p => String(p.id_pelanggan) === String(id));
+                if (idx !== -1) state.pelanggan[idx] = { ...state.pelanggan[idx], ...payload };
+            } else {
+                state.pelanggan.push({ id_pelanggan: Date.now(), ...payload });
+            }
+            simpanDemoKeStorage();
+            resetForm("form-pelanggan");
+            tampilkanForm("form-pelanggan", false);
+            renderAll();
+            tampilkanPesan("Data pelanggan berhasil disimpan.");
+            return;
+        }
+
         if (id) await supabaseRequest("pelanggan", { method: "PATCH", filters: { id_pelanggan: `eq.${id}` }, body: payload });
         else await supabaseRequest("pelanggan", { method: "POST", body: payload });
 
@@ -1143,6 +1460,21 @@ async function savePaket(event) {
     if (payload.harga !== undefined) payload.harga = angka(payload.harga);
 
     try {
+        if (state.isDemoMode) {
+            if (id) {
+                const idx = state.paket.findIndex(p => String(p.id_paket) === String(id));
+                if (idx !== -1) state.paket[idx] = { ...state.paket[idx], ...payload };
+            } else {
+                state.paket.push({ id_paket: Date.now(), ...payload });
+            }
+            simpanDemoKeStorage();
+            resetForm("form-paket");
+            tampilkanForm("form-paket", false);
+            renderAll();
+            tampilkanPesan("Data paket wedding berhasil disimpan.");
+            return;
+        }
+
         if (id) await supabaseRequest("paket_wedding", { method: "PATCH", filters: { id_paket: `eq.${id}` }, body: payload });
         else await supabaseRequest("paket_wedding", { method: "POST", body: payload });
 
@@ -1163,6 +1495,22 @@ async function saveTransaksi(event) {
     if (payload.total_transaksi !== undefined) payload.total_transaksi = angka(payload.total_transaksi);
 
     try {
+        if (state.isDemoMode) {
+            if (id) {
+                const idx = state.transaksi.findIndex(t => String(t.id_transaksi) === String(id));
+                if (idx !== -1) state.transaksi[idx] = { ...state.transaksi[idx], ...payload };
+            } else {
+                const nextId = state.transaksi.reduce((max, t) => Math.max(max, angka(t.id_transaksi)), 200) + 1;
+                state.transaksi.push({ id_transaksi: nextId, ...payload });
+            }
+            simpanDemoKeStorage();
+            resetForm("form-transaksi");
+            tampilkanForm("form-transaksi", false);
+            renderAll();
+            tampilkanPesan("Transaksi berhasil disimpan. Silakan klik Invoice untuk cetak tagihan.");
+            return;
+        }
+
         if (id) await supabaseRequest("transaksi_wedding", { method: "PATCH", filters: { id_transaksi: `eq.${id}` }, body: payload });
         else await supabaseRequest("transaksi_wedding", { method: "POST", body: payload });
 
@@ -1183,6 +1531,30 @@ async function savePembayaran(event) {
     if (payload.jumlah_bayar !== undefined) payload.jumlah_bayar = angka(payload.jumlah_bayar);
 
     try {
+        if (state.isDemoMode) {
+            if (id) {
+                const idx = state.pembayaran.findIndex(p => String(p.id_pembayaran) === String(id));
+                if (idx !== -1) state.pembayaran[idx] = { ...state.pembayaran[idx], ...payload };
+            } else {
+                state.pembayaran.push({ id_pembayaran: Date.now(), ...payload });
+            }
+
+            const trx = state.transaksi.find(t => String(t.id_transaksi) === String(payload.id_transaksi));
+            if (trx) {
+                const totalTagihan = angka(trx.total_transaksi);
+                const totalSudahDibayar = getTotalPembayaran(trx.id_transaksi);
+                if (totalSudahDibayar >= totalTagihan) trx.status = "Lunas";
+                else if (totalSudahDibayar > 0) trx.status = "Berlangsung";
+            }
+
+            simpanDemoKeStorage();
+            resetForm("form-pembayaran");
+            tampilkanForm("form-pembayaran", false);
+            renderAll();
+            tampilkanPesan("Pembayaran tercatat & status transaksi otomatis diperbarui.");
+            return;
+        }
+
         if (id) {
             await supabaseRequest("pembayaran", { method: "PATCH", filters: { id_pembayaran: `eq.${id}` }, body: payload });
         } else {
@@ -1269,15 +1641,23 @@ function editPembayaran(id) {
 
 async function deleteRecord(jenis, id) {
     const konfigurasi = {
-        pelanggan: { tabel: "pelanggan", kolom: "id_pelanggan" },
-        paket: { tabel: "paket_wedding", kolom: "id_paket" },
-        transaksi: { tabel: "transaksi_wedding", kolom: "id_transaksi" },
-        pembayaran: { tabel: "pembayaran", kolom: "id_pembayaran" }
+        pelanggan: { tabel: "pelanggan", kolom: "id_pelanggan", key: "pelanggan" },
+        paket: { tabel: "paket_wedding", kolom: "id_paket", key: "paket" },
+        transaksi: { tabel: "transaksi_wedding", kolom: "id_transaksi", key: "transaksi" },
+        pembayaran: { tabel: "pembayaran", kolom: "id_pembayaran", key: "pembayaran" }
     };
     const item = konfigurasi[jenis];
     if (!item || !confirm("Yakin ingin menghapus data ini?")) return;
 
     try {
+        if (state.isDemoMode) {
+            state[item.key] = state[item.key].filter(row => String(row[item.kolom]) !== String(id));
+            simpanDemoKeStorage();
+            renderAll();
+            tampilkanPesan("Data berhasil dihapus.");
+            return;
+        }
+
         await supabaseRequest(item.tabel, { method: "DELETE", filters: { [item.kolom]: `eq.${id}` } });
         await loadAllData();
         tampilkanPesan("Data berhasil dihapus.");
@@ -1335,7 +1715,6 @@ function setupForms() {
 
     document.getElementById("pilih-paket")?.addEventListener("change", isiHargaPaket);
 
-    // Pengaturan Modal Awal pada Laporan Keuangan
     document.getElementById("btn-simpan-modal")?.addEventListener("click", () => {
         const val = document.getElementById("input-modal-awal")?.value;
         simpanModalAwal(val);
@@ -1343,7 +1722,12 @@ function setupForms() {
         tampilkanPesan("Saldo modal awal berhasil diterapkan ke laporan keuangan.");
     });
 
-    // Kontrol Modal Invoice
+    document.getElementById("btn-muat-simulasi")?.addEventListener("click", () => {
+        if (confirm("Muat ulang data simulasi demo Lunelle Wedding untuk presentasi?")) {
+            muatDataSimulasiSekarang(true);
+        }
+    });
+
     document.getElementById("btn-close-invoice")?.addEventListener("click", tutupInvoiceModal);
     document.getElementById("btn-print-invoice")?.addEventListener("click", cetakInvoiceSekarang);
     document.getElementById("invoice-modal")?.addEventListener("click", event => {
@@ -1359,7 +1743,6 @@ function setupTableActions() {
             return;
         }
 
-        // Pintasan "Bayar" langsung dari baris Transaksi
         const tombolQuickPay = event.target.closest("[data-quick-pay]");
         if (tombolQuickPay) {
             const idTrx = tombolQuickPay.dataset.quickPay;
