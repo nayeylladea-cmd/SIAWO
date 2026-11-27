@@ -1,10 +1,5 @@
 "use strict";
 
-/* =========================================
-   SIAWO - SISTEM INFORMASI AKUNTANSI WEDDING ORGANIZER
-   Frontend JavaScript + Supabase + Data Simulasi Demo + SAK EMKM
-   ========================================= */
-
 const SUPABASE_URL = "https://kkuwqdluicotbzgdmfjk.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Cs1-1HixNDSvTVVJyfp32Q_o1e94vZn";
 const STORAGE_JURNAL_MANUAL = "siawo_jurnal_manual_v1";
@@ -24,10 +19,6 @@ const state = {
 let sedangMemuat = false;
 let grafikKeuangan = null;
 
-/* =========================================
-   DATA SIMULASI REALISTIS LUNELLE WEDDING
-   (Otomatis aktif jika Supabase kosong)
-========================================= */
 function buatDataSimulasiDefault() {
     return {
         pelanggan: [
@@ -410,7 +401,6 @@ async function loadAllData() {
         const rowsTransaksi = getRows(transaksi);
         const rowsPembayaran = getRows(pembayaran);
 
-        // Jika database Supabase kosong, otomatis aktifkan Data Simulasi Demo
         if (rowsPelanggan.length === 0 && rowsTransaksi.length === 0) {
             const savedDemoRaw = localStorage.getItem(STORAGE_DEMO_DATA);
             if (savedDemoRaw) {
@@ -520,9 +510,6 @@ function setIsiTabel(id, html, colspan = 1) {
     tabel.innerHTML = html || `<tr><td colspan="${colspan}" style="text-align:center; padding:24px; color:#8c737b;">Belum ada data yang tercatat.</td></tr>`;
 }
 
-/* =========================================
-   FITUR PRATINJAU & CETAK INVOICE PELANGGAN
-========================================= */
 function bukaInvoiceModal(idTransaksi) {
     const trx = state.transaksi.find(t => String(t.id_transaksi) === String(idTransaksi));
     if (!trx) {
@@ -713,9 +700,6 @@ function cetakInvoiceSekarang() {
     jendelaPrint.document.close();
 }
 
-/* =========================================
-   JURNAL UMUM (OTOMATIS & PENYESUAIAN)
-========================================= */
 function buildDaftarJurnal() {
     const entri = [];
 
@@ -882,9 +866,6 @@ function deleteJurnalManual(idJurnal) {
     tampilkanPesan("Entri jurnal berhasil dihapus.");
 }
 
-/* =========================================
-   RENDER DASHBOARD & MODUL OPERASIONAL
-========================================= */
 function renderDashboard() {
     const totalPendapatan = state.pembayaran.reduce((total, item) => total + angka(item.jumlah_bayar), 0);
     const totalTagihan = state.transaksi.reduce((total, item) => total + angka(item.total_transaksi), 0);
@@ -1161,9 +1142,6 @@ function renderPiutang() {
     if (bersihElem) bersihElem.textContent = rupiah(Math.max(totalSeluruhPiutang - totalPenyisihan, 0));
 }
 
-/* =========================================
-   LAPORAN KEUANGAN STANDAR AKUNTANSI (SAK EMKM)
-========================================= */
 function renderLaporan() {
     const hariIniTeks = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
     const tahunTeks = `31 Desember ${new Date().getFullYear()}`;
@@ -1199,7 +1177,6 @@ function renderLaporan() {
         if (kreditLower.includes("modal")) setoranModalJurnal += nominal;
     });
 
-    // 1. Laporan Laba Rugi
     const totalBeban = totalBebanManual + cadanganPiutang;
     const labaBersih = pendapatanJasa - totalBeban;
 
@@ -1225,7 +1202,6 @@ function renderLaporan() {
         elLabaBersih.style.color = labaBersih < 0 ? "#dc2626" : "#15803d";
     }
 
-    // 2. Laporan Perubahan Ekuitas
     const modalAwalTotal = state.modalAwal + setoranModalJurnal;
     const kenaikanEkuitas = labaBersih - totalPrive;
     const modalAkhir = modalAwalTotal + kenaikanEkuitas;
@@ -1236,7 +1212,6 @@ function renderLaporan() {
     if (document.getElementById("pe-kenaikan-ekuitas")) document.getElementById("pe-kenaikan-ekuitas").textContent = kenaikanEkuitas < 0 ? kurungRupiah(kenaikanEkuitas) : rupiah(kenaikanEkuitas);
     if (document.getElementById("pe-modal-akhir")) document.getElementById("pe-modal-akhir").textContent = rupiah(modalAkhir);
 
-    // 3. Laporan Posisi Keuangan (Neraca)
     const saldoKasAkhir = modalAwalTotal + kasMasukPelanggan - totalBebanManual - totalPrive + totalUtang;
     const totalAset = saldoKasAkhir + piutangNeto;
     const totalPasiva = totalUtang + modalAkhir;
@@ -1258,7 +1233,6 @@ function renderLaporan() {
             : `⚠ Selisih Neraca: ${rupiah(Math.abs(totalAset - totalPasiva))}`;
     }
 
-    // 4. Laporan Arus Kas
     const arusKasOperasi = kasMasukPelanggan - totalBebanManual;
     const arusKasPendanaan = modalAwalTotal - totalPrive;
 
@@ -1287,9 +1261,6 @@ function renderLaporan() {
     setIsiTabel("tabel-laporan-kas", rowsKasHTML, 6);
 }
 
-/* =========================================
-   DROPDOWN, FORM, & NAVIGASI
-========================================= */
 function isiDropdown(id, data, kolomID, pembuatLabel) {
     const elemen = document.getElementById(id);
     if (!elemen) return;
@@ -1415,9 +1386,6 @@ function tampilkanForm(formID, tampil = true) {
     pembungkus.classList.toggle("hidden", !tampil);
 }
 
-/* =========================================
-   CRUD (MENDUKUNG SUPABASE & SIMULASI LOKAL)
-========================================= */
 async function savePelanggan(event) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -1788,9 +1756,6 @@ async function initializeApp() {
 
 document.addEventListener("DOMContentLoaded", initializeApp);
 
-/* =========================================
-   FITUR LOGOUT
-========================================= */
 const btnLogout = document.getElementById("btn-logout");
 if (btnLogout) {
     btnLogout.addEventListener("click", function (e) {
